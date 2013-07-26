@@ -1,0 +1,7 @@
+#build dirs
+build
+install
+lib
+
+#emacs
+*~
