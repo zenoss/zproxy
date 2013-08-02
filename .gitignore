@@ -1,7 +1,8 @@
-#build dirs
+#build stuff
 build
 install
 lib
+.extracted
 
 #emacs
 *~

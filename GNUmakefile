@@ -40,6 +40,7 @@ NGINX_DEV_URL=https://github.com/simpl/ngx_devel_kit/archive/v$(NGINX_DEV_VERSIO
 WGET = $(shell which wget)
 
 HIPACHE_INSTALL=$(INSTALL_DIR)/hipache-nginx
+SUPERVISORD_DIR = $(INSTALL_DIR)/etc/supervisor
 
 %/.d:
 	@mkdir -p $(@D)
@@ -124,11 +125,12 @@ $(HIPACHE_INSTALL)/conf/hipache-nginx.cfg:
 	cp zenoss-hipache-nginx.cfg $(HIPACHE_INSTALL)/conf/; \
 	cp zenoss-hipache.lua $(HIPACHE_INSTALL)/conf/; \
 	cp nginx-example.cfg $(HIPACHE_INSTALL)/conf/nginx-hipache.conf; \
+	cp hipache-nginx_supervisor.conf $(HIPACHE_INSTALL)/conf/; \
 	rm -f $(HIPACHE_INSTALL)/conf/nginx.conf; \
 	ln -s nginx-hipache.conf $(HIPACHE_INSTALL)/conf/nginx.conf; \
 	cp hipachenginx $(HIPACHE_INSTALL)/sbin/ ;\
 	chmod +x $(HIPACHE_INSTALL)/sbin/hipachenginx;\
-	mkdir -p $(HIPACHE_INSTALL)/scripts && cp scripts/* $(HIPACHE_INSTALL)/scripts/
+	mkdir -p $(HIPACHE_INSTALL)/scripts && cp scripts/* $(HIPACHE_INSTALL)/scripts/; 
 
 clean:
 	rm -rf $(BUILD_DIR)
