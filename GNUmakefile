@@ -119,13 +119,9 @@ $(HIPACHE_INSTALL)/sbin/nginx: $(LUAJIT_INSTALL) $(NGINXDEV) $(NGINXLUA) $(LUARE
 
 
 
-HIPACHECFG=$(HIPACHE_INSTALL)/conf/hipache-nginx.cfg
-$(HIPACHE_INSTALL)/conf/hipache-nginx.cfg:
-	cp hipache-nginx.cfg $(HIPACHE_INSTALL)/conf/; \
-	cp zenoss-hipache-nginx.cfg $(HIPACHE_INSTALL)/conf/; \
-	cp zenoss-hipache.lua $(HIPACHE_INSTALL)/conf/; \
-	cp nginx-example.cfg $(HIPACHE_INSTALL)/conf/nginx-hipache.conf; \
-	cp hipache-nginx_supervisor.conf $(HIPACHE_INSTALL)/conf/; \
+HIPACHECFG=$(HIPACHE_INSTALL)/conf/nginx-hipache.conf
+$(HIPACHE_INSTALL)/conf/nginx-hipache.conf:
+	cp conf/* $(HIPACHE_INSTALL)/conf/; \
 	rm -f $(HIPACHE_INSTALL)/conf/nginx.conf; \
 	ln -s nginx-hipache.conf $(HIPACHE_INSTALL)/conf/nginx.conf; \
 	cp hipachenginx $(HIPACHE_INSTALL)/sbin/ ;\

@@ -1,6 +1,4 @@
 #!/bin/bash
-#set -x -v
-
 
 if [ -z ${HIPACHE_HOME} ]; then
     pushd `dirname $0` > /dev/null
@@ -8,69 +6,25 @@ if [ -z ${HIPACHE_HOME} ]; then
     popd > /dev/null
     HIPACHE_HOME=`dirname ${SCRIPTPATH}`
 fi
-echo "HOME ${HIPACHE_HOME}"
-
-
-
-fail(){
-  echo "$@" 1>&2;
-  exit 1
-}
-
-
-handle_redis_error(){
-    local result=$1
-    local msg=$2
-    if [[ "${result}" == ERR* ]]; then
-	fail "${msg}"
-    fi
-}
-
-load_script(){
-    local script_name="$1"
-    local script_path="$2"
-
-    if [ ! -f ${script_path} ]; then 
-	fail "${script_path} not found"
-    fi
-    local SCRIPT=$(<"${script_path}")
-    local hash=$(${REDIS_CLI} script load "${SCRIPT}")
-    handle_redis_error "${hash}" "Error loading ${script_name} script"
-
-    local result=$($REDIS_CLI hset "scripts" "${script_name}" "${hash}")
-    handle_redis_error "${result}" "Error setting ${script_name} hash"
-}
-
-load_scripts(){
-    REDIS_CLI=`which redis-cli`
-    if [ -z ${REDIS_CLI} ];then
-	fail "redis-cli not available"
-    fi
-    echo "Loading scripts..."
-    load_script "register" "${HIPACHE_HOME}/scripts/register.lua"
-    load_script "unregister" "${HIPACHE_HOME}/scripts/unregister.lua"
-}
 
 hipache_run() {
     case "$CMD" in
       start)
 	    export LD_LIBRARY_PATH=${HIPACHE_HOME}/lib:$LD_LIBRARY_PATH
-	    echo "Starting hipach-nginx"
+	    echo "Starting hipache-nginx"
 	    cd ${HIPACHE_HOME}
 	    ${HIPACHE_HOME}/sbin/nginx $@
 	    ;;
-      load-scripts)
-	    load_scripts
+      register)
+	    HIPACHE_HOME=${HIPACHE_HOME} python ${HIPACHE_HOME}/scripts/register.py $@
 	    ;;
 	*)
 	    cat - <<HELP
-Usage: $(basename $0) {start|load-scripts}
+Usage: $(basename $0) {start|load-scripts|register|register-all}
 
   where the commands are:
     start        - start hipache-nginx
-
-    load-scripts - load the utility scripts for registering and un-registering services into redis
-
+    register     - Top level command for interacting with registering endpoints
 HELP
 	    exit 1
     esac

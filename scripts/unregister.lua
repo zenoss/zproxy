@@ -2,19 +2,10 @@ function string.starts(String, Start)
     return string.sub(String, 1, string.len(Start)) == Start
 end
 
-local key = ""
-local endpoint = ""
-local deadpoint = ""
+local key = KEYS[1]
 
--- Compute the key, based on whether the server is http or websocket
-if string.starts(ARGV[1], "ws") then
-    key = "/ws/"..KEYS[1]
-else
-    key = "/api/"..KEYS[1]
-end
-
-endpoint = "frontend:"..key
-deadpoint = "dead:"..key
+local endpoint = "frontend:"..key
+local deadpoint = "dead:"..key
 
 -- Get the servers in the pool
 local server_list = redis.call("LRANGE", endpoint, 1, -1)

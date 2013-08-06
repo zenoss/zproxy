@@ -1,6 +1,6 @@
     -- Extract the URI
     local uri = ngx.var.uri
-    ngx.log(ngx.STDERR, "URI: ", uri)
+    ngx.log(ngx.DEBUG, "URI: ", uri)
     --match the first 2 parts of a path
     local pathPrefixRE = [[(^/[^/]+/[^/]+)]]
     local uri_prefix  = ngx.re.match(uri, pathPrefixRE)
