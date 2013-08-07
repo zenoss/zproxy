@@ -1,0 +1,8 @@
+#build stuff
+build
+install
+lib
+.extracted
+
+#emacs
+*~
