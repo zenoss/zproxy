@@ -5,11 +5,9 @@
     local pathPrefixRE = [[(^/[^/]+/[^/]+)]]
     local uri_prefix  = ngx.re.match(uri, pathPrefixRE)
     if uri_prefix == nill then
-       ngx.log(ngx.STDERR, "No prefix")
+       ngx.log(ngx.DEBUG, "No prefix")
        uri_prefix = ""
     else
-        ngx.log(ngx.STDERR, "PREFIX[0]: ", uri_prefix[0])
-        ngx.log(ngx.STDERR, "PREFIX[1]: ", uri_prefix[1])
 	    uri_prefix = uri_prefix[1]
         ngx.log(ngx.STDERR, "PREFIX: ", uri_prefix)
     end
@@ -20,6 +18,7 @@
     red:set_timeout(1000)
     local ok, err = red:connect("127.0.0.1", 6379)
     if not ok then
+        -- TODO set a status code
         ngx.say("Failed to connect to Redis: ", err)
         return
     end
@@ -27,8 +26,6 @@
     -- Extract only the hostname without the port
     local frontend = ngx.re.match(ngx.var.http_host, "^([^:]*)")
     if frontend ~= nill then
-       ngx.log(ngx.STDERR, "FRONTEND 0: ", frontend[0])
-       ngx.log(ngx.STDERR, "FRONTEND 1: ", frontend[1])
        frontend = frontend[1]
     end
 
@@ -36,8 +33,6 @@
     local domain_regex = [[(\.[^.]+\.[^.]+)$]]
     local domain_name = ngx.re.match(frontend, domain_regex)
     if domain_name ~= nill then
-       ngx.log(ngx.STDERR, "domain_name 0: ", domain_name[0])
-       ngx.log(ngx.STDERR, "domain_name 1: ", domain_name[1])
        domain_name = domain_name[1]
     else
        ngx.log(ngx.STDERR, "No domain name")
@@ -52,6 +47,7 @@
     red:smembers("dead:" .. uri_prefix)
     local ans, err = red:exec()
     if not ans then
+        -- TODO set a status code
         ngx.say("Lookup failed: ", err)
         return
     end
@@ -60,14 +56,18 @@
     local backends = ans[1]
     local pathBackend = true
     if #backends == 0 then
+        -- did not match URI prefix?
+        -- fall back to regular hipache matches by host then domain
         pathBackend = false
     	backends = ans[2]
 	    if #backends == 0 then
+            -- domain match
 	        backends = ans[3]
 	    end
     end
 
     if #backends == 0 then
+        -- TODO set a status code
         ngx.say("Backend not found")
         return
     end
@@ -79,23 +79,14 @@
     else
         deads = ans[4]
     end
-    for i, v in ipairs(deads) do
-        --print(i, v)
-        ngx.log(ngx.STDERR, "-------deads", i, ":", v)
-    end
 
     -- Pickup a random backend (after removing the dead ones)
     local indexes = {}
     for i, v in ipairs(deads) do
         deads[v] = true
     end
-    for k, v in pairs(deads) do
-        --print(i, v)
-        ngx.log(ngx.STDERR, "-------deads after ", k, ":", v)
-    end
 
     for i, v in ipairs(backends) do
-        ngx.log(ngx.STDERR, "-------checking deads", i, ":", v)
         if deads[v] == nil then
             table.insert(indexes, i)
         end
@@ -106,9 +97,6 @@
     -- Announce dead backends if there is any
     local deads = ngx.shared.deads
     for i, v in ipairs(deads:get_keys()) do
-        ngx.log(ngx.STDERR, "--------PUB DEADS-------------- ", i)
-        ngx.log(ngx.STDERR, "--------PUB DEADS-------------- ", v)
-        ngx.log(ngx.STDERR, "--------PUB DEADS-------------- ", deads:get(v))
         red:publish("dead", deads:get(v))
         deads:delete(v)
     end
@@ -117,37 +105,38 @@
     red:set_keepalive(0, 100)
 
     -- Export variables
-    ngx.log(ngx.STDERR, "path backends ", pathBackend)
-    ngx.log(ngx.STDERR, "backend ", backend)
+    ngx.log(ngx.DEBUG, "path backends ", pathBackend)
+    ngx.log(ngx.DEBUG, "backend ", backend)
 
     if not backend then
+        -- TODO set a status code
         ngx.say("Backend not available")
         return
     end
 
     if pathBackend == true then
+        -- found a uri prefix match, rewrite path to backend path
         -- parse backend
+        -- match 1 is up to first slash after host, match 2 is the path
 	    local backendRE = [[(.+\://[^/]*)(/.*)]]
 	    local backendMatch= ngx.re.match(backend, backendRE)
-        if true then
-            ngx.log(ngx.STDERR, "blam ",backendMatch[1])
-            ngx.log(ngx.STDERR, "blam ",backendMatch[2])
-        end
 
 	    ngx.var.backend = backendMatch[1]
         if true then
             ngx.log(ngx.STDERR, "new backend ",ngx.var.backend)
         end
 
+        -- path portion of backend url
 	    local newPrefix = backendMatch[2]
         if true then
             ngx.log(ngx.STDERR, "new prefix ", newPrefix)
         end
-
+        -- replace incoming path prefix with new prefix (rewrite url)
 	    local newPath = string.gsub(uri, uri_prefix, newPrefix, 1)
-        ngx.log(ngx.STDERR, "new path ", newPath)
+        ngx.log(ngx.DEBUG, "new path ", newPath)
         ngx.req.set_uri(newPath)
     else
+        -- not a path back end, should just be a host eg. http://www.host.com:8000
         ngx.var.backend = backend
     end
     ngx.var.backends_len = #backends

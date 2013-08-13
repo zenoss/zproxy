@@ -29,7 +29,6 @@ def handleFile(args):
             if line.startswith("port "):
                 port = line.split()[1]
             elif line and not line.startswith('#'):
-                import  pdb;pdb.set_trace();
                 proxied.append(line.split())
     for frontend, backend in proxied:
         register(frontend, backend, host, port)

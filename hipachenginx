@@ -1,7 +1,8 @@
 #!/bin/bash
 
 if [ -z ${HIPACHE_HOME} ]; then
-    pushd `dirname $0` > /dev/null
+    SCRIPT=`readlink -f $0`
+    pushd `dirname ${SCRIPT}` > /dev/null
     SCRIPTPATH=`pwd -P`
     popd > /dev/null
     HIPACHE_HOME=`dirname ${SCRIPTPATH}`
