@@ -39,7 +39,7 @@ NGINX_DEV_URL=https://github.com/simpl/ngx_devel_kit/archive/v$(NGINX_DEV_VERSIO
 
 WGET = $(shell which wget)
 
-HIPACHE_INSTALL=$(INSTALL_DIR)/hipache-nginx
+ZPROXY_INSTALL=$(INSTALL_DIR)/zproxy
 SUPERVISORD_DIR = $(INSTALL_DIR)/etc/supervisor
 
 %/.d:
@@ -74,8 +74,8 @@ $(LIB_DIR)/$(LUA_REDIS_TGZ):
 	mkdir -p $(LIB_DIR)
 	cd $(LIB_DIR) && $(WGET) $(LUA_REDIS_URL) -O $(LUA_REDIS_TGZ)
 
-$(HIPACHE_INSTALL)/opt/$(RESTY_REDIS)/.d: $(LIB_DIR)/$(LUA_REDIS_TGZ) $(HIPACHE_INSTALL)/opt/.d
-	cd $(HIPACHE_INSTALL)/opt && tar -xvf $(LIB_DIR)/$(LUA_REDIS_TGZ) && mv $(LUA_REDIS_V) $(RESTY_REDIS)
+$(ZPROXY_INSTALL)/opt/$(RESTY_REDIS)/.d: $(LIB_DIR)/$(LUA_REDIS_TGZ) $(ZPROXY_INSTALL)/opt/.d
+	cd $(ZPROXY_INSTALL)/opt && tar -xvf $(LIB_DIR)/$(LUA_REDIS_TGZ) && mv $(LUA_REDIS_V) $(RESTY_REDIS)
 	@touch $@
 
 $(LIB_DIR)/$(LUA_JIT_TGZ): 
@@ -91,22 +91,22 @@ $(BUILD_DIR)/$(LUA_JIT)/.d: $(LIB_DIR)/$(LUA_JIT_TGZ) $(BUILD_DIR)/.d
 
 .PHONY=luajit
 
-LUAJIT_INSTALL=$(HIPACHE_INSTALL)/bin/luajit
-$(HIPACHE_INSTALL)/bin/luajit: $(BUILD_DIR)/$(LUA_JIT)/.d
+LUAJIT_INSTALL=$(ZPROXY_INSTALL)/bin/luajit
+$(ZPROXY_INSTALL)/bin/luajit: $(BUILD_DIR)/$(LUA_JIT)/.d
 	cd $(BUILD_DIR)/$(LUA_JIT);\
 	make;\
-	make install PREFIX=$(HIPACHE_INSTALL)
+	make install PREFIX=$(ZPROXY_INSTALL)
 
 
 NGINXDEV= $(BUILD_DIR)/$(NGINX_DEV)/.d
 NGINXLUA=$(BUILD_DIR)/$(NGINX_LUA)/.d
-LUAREDIS_INSTALL=$(HIPACHE_INSTALL)/opt/$(RESTY_REDIS)/.d
-NGINX_INSTALL=$(HIPACHE_INSTALL)/sbin/nginx
-$(HIPACHE_INSTALL)/sbin/nginx: $(LUAJIT_INSTALL) $(NGINXDEV) $(NGINXLUA) $(LUAREDIS_INSTALL) $(BUILD_DIR)/$(NGINX)/.d 
+LUAREDIS_INSTALL=$(ZPROXY_INSTALL)/opt/$(RESTY_REDIS)/.d
+NGINX_INSTALL=$(ZPROXY_INSTALL)/sbin/nginx
+$(ZPROXY_INSTALL)/sbin/nginx: $(LUAJIT_INSTALL) $(NGINXDEV) $(NGINXLUA) $(LUAREDIS_INSTALL) $(BUILD_DIR)/$(NGINX)/.d
 	cd $(BUILD_DIR)/$(NGINX);\
-	export LUAJIT_LIB=$(HIPACHE_INSTALL)/lib;\
-	export LUAJIT_INC=$(HIPACHE_INSTALL)/include/luajit-2.0;\
-	./configure --prefix=$(HIPACHE_INSTALL) \
+	export LUAJIT_LIB=$(ZPROXY_INSTALL)/lib;\
+	export LUAJIT_INC=$(ZPROXY_INSTALL)/include/luajit-2.0;\
+	./configure --prefix=$(ZPROXY_INSTALL) \
 		--add-module=$(BUILD_DIR)/$(NGINX_DEV) \
 		--add-module=$(BUILD_DIR)/$(NGINX_LUA)/ \
 		--with-http_ssl_module \
@@ -119,19 +119,19 @@ $(HIPACHE_INSTALL)/sbin/nginx: $(LUAJIT_INSTALL) $(NGINXDEV) $(NGINXLUA) $(LUARE
 
 
 
-HIPACHECFG=$(HIPACHE_INSTALL)/conf/nginx-hipache.conf
-$(HIPACHE_INSTALL)/conf/nginx-hipache.conf:
-	cp conf/* $(HIPACHE_INSTALL)/conf/; \
-	rm -f $(HIPACHE_INSTALL)/conf/nginx.conf; \
-	ln -s nginx-hipache.conf $(HIPACHE_INSTALL)/conf/nginx.conf; \
-	cp hipachenginx $(HIPACHE_INSTALL)/sbin/ ;\
-	chmod +x $(HIPACHE_INSTALL)/sbin/hipachenginx;\
-	mkdir -p $(HIPACHE_INSTALL)/scripts && cp scripts/* $(HIPACHE_INSTALL)/scripts/; 
+ZPROXYCFG=$(ZPROXY_INSTALL)/conf/zproxy-nginx.conf
+$(ZPROXY_INSTALL)/conf/zproxy-nginx.conf:
+	cp conf/* $(ZPROXY_INSTALL)/conf/; \
+	rm -f $(ZPROXY_INSTALL)/conf/nginx.conf; \
+	ln -s zproxy-nginx.conf $(ZPROXY_INSTALL)/conf/nginx.conf; \
+	cp zproxy $(ZPROXY_INSTALL)/sbin/ ;\
+	chmod +x $(ZPROXY_INSTALL)/sbin/zproxy;\
+	mkdir -p $(ZPROXY_INSTALL)/scripts && cp scripts/* $(ZPROXY_INSTALL)/scripts/;
 
 clean:
 	rm -rf $(BUILD_DIR)
 
 
 
-install: $(NGINX_INSTALL) $(HIPACHECFG)
+install: $(NGINX_INSTALL) $(ZPROXYCFG)
 

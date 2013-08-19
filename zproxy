@@ -1,0 +1,45 @@
+#!/bin/bash
+##############################################################################
+#
+# Copyright (C) Zenoss, Inc. 2013, all rights reserved.
+#
+# This content is made available according to terms specified in
+# License.zenoss under the directory where your Zenoss product is installed.
+#
+##############################################################################
+
+if [ -z ${ZPROXY_HOME} ]; then
+    SCRIPT=`readlink -f $0`
+    pushd `dirname ${SCRIPT}` > /dev/null
+    SCRIPTPATH=`pwd -P`
+    popd > /dev/null
+    ZPROXY_HOME=`dirname ${SCRIPTPATH}`
+fi
+
+zproxy_run() {
+    case "$CMD" in
+      start)
+	    export LD_LIBRARY_PATH=${ZPROXY_HOME}/lib:$LD_LIBRARY_PATH
+	    echo "Starting zproxy"
+	    cd ${ZPROXY_HOME}
+	    ${ZPROXY_HOME}/sbin/nginx $@
+	    ;;
+      register)
+	    ZPROXY_HOME=${ZPROXY_HOME} python ${ZPROXY_HOME}/scripts/register.py $@
+	    ;;
+	*)
+	    cat - <<HELP
+Usage: $(basename $0) {start|load-scripts|register|register-all}
+
+  where the commands are:
+    start        - start zproxy
+    register     - Top level command for interacting with registering endpoints
+HELP
+	    exit 1
+    esac
+    exit $?
+}
+
+CMD=$1
+shift
+zproxy_run "$@"

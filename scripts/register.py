@@ -1,3 +1,11 @@
+##############################################################################
+#
+# Copyright (C) Zenoss, Inc. 2013, all rights reserved.
+#
+# This content is made available according to terms specified in
+# License.zenoss under the directory where your Zenoss product is installed.
+#
+##############################################################################
 import argparse
 import subprocess
 import sys
@@ -38,7 +46,7 @@ def handleLoadScripts(args, printOutput=True):
     check_redis_cli()
     if printOutput:
         print "Loading scripts..."
-    home = os.environ['HIPACHE_HOME']
+    home = os.environ['ZPROXY_HOME']
     load_script(args.host, args.port, "register", "%s/scripts/register.lua" % home)
     load_script(args.host, args.port, "unregister", "%s/scripts/unregister.lua" % home)
 
