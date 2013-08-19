@@ -1,0 +1,37 @@
+#!/bin/bash
+
+if [ -z ${HIPACHE_HOME} ]; then
+    SCRIPT=`readlink -f $0`
+    pushd `dirname ${SCRIPT}` > /dev/null
+    SCRIPTPATH=`pwd -P`
+    popd > /dev/null
+    HIPACHE_HOME=`dirname ${SCRIPTPATH}`
+fi
+
+hipache_run() {
+    case "$CMD" in
+      start)
+	    export LD_LIBRARY_PATH=${HIPACHE_HOME}/lib:$LD_LIBRARY_PATH
+	    echo "Starting hipache-nginx"
+	    cd ${HIPACHE_HOME}
+	    ${HIPACHE_HOME}/sbin/nginx $@
+	    ;;
+      register)
+	    HIPACHE_HOME=${HIPACHE_HOME} python ${HIPACHE_HOME}/scripts/register.py $@
+	    ;;
+	*)
+	    cat - <<HELP
+Usage: $(basename $0) {start|load-scripts|register|register-all}
+
+  where the commands are:
+    start        - start hipache-nginx
+    register     - Top level command for interacting with registering endpoints
+HELP
+	    exit 1
+    esac
+    exit $?
+}
+
+CMD=$1
+shift
+hipache_run "$@"
