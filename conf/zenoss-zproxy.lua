@@ -143,7 +143,7 @@
         end
         -- replace incoming path prefix with new prefix (rewrite url)
 	    local newPath = string.gsub(uri, uri_prefix, newPrefix, 1)
-        ngx.log(ngx.DEBUG, "new path ", newPath)
+        ngx.log(ngx.STDERR, "new path ", newPath)
         ngx.req.set_uri(newPath)
     else
         -- not a path back end, should just be a host eg. http://www.host.com:8000
