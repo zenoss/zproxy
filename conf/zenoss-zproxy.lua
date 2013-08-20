@@ -11,8 +11,8 @@
     -- Extract the URI
     local uri = ngx.var.uri
     ngx.log(ngx.DEBUG, "URI: ", uri)
-    --match the first 2 parts of a path
-    local pathPrefixRE = [[(^/[^/]+/[^/]+)]]
+    --match the first 3 parts of a path. eg /api/category/resource
+    local pathPrefixRE = [[(^/[^/]+/[^/]+/[^/]+)]]
     local uri_prefix  = ngx.re.match(uri, pathPrefixRE)
     if uri_prefix == nill then
        ngx.log(ngx.DEBUG, "No prefix")
