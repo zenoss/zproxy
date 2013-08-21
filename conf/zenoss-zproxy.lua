@@ -11,8 +11,8 @@
     -- Extract the URI
     local uri = ngx.var.uri
     ngx.log(ngx.DEBUG, "URI: ", uri)
-    --match the first 2 parts of a path
-    local pathPrefixRE = [[(^/[^/]+/[^/]+)]]
+    --match the first 3 parts of a path. eg /api/category/resource
+    local pathPrefixRE = [[(^/[^/]+/[^/]+/[^/]+)]]
     local uri_prefix  = ngx.re.match(uri, pathPrefixRE)
     if uri_prefix == nill then
        ngx.log(ngx.DEBUG, "No prefix")
@@ -143,7 +143,7 @@
         end
         -- replace incoming path prefix with new prefix (rewrite url)
 	    local newPath = string.gsub(uri, uri_prefix, newPrefix, 1)
-        ngx.log(ngx.DEBUG, "new path ", newPath)
+        ngx.log(ngx.STDERR, "new path ", newPath)
         ngx.req.set_uri(newPath)
     else
         -- not a path back end, should just be a host eg. http://www.host.com:8000
