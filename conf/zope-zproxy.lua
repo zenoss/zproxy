@@ -18,8 +18,10 @@
     red:set_timeout(1000)
     local ok, err = red:connect("127.0.0.1", 6379)
     if not ok then
-        -- TODO set a status code
+        ngx.status = ngx.HTTP_SERVER_ERROR
         ngx.say("Failed to connect to Redis: ", err)
+        -- to cause quit the whole request rather than the current phase handler
+        ngx.exit(ngx.HTTP_OK)
         return
     end
 
@@ -30,16 +32,20 @@
     red:smembers("dead:zope")
     local ans, err = red:exec()
     if not ans then
-        -- TODO set a status code
+        ngx.status = 502
         ngx.say("Lookup failed: ", err)
+        -- to cause quit the whole request rather than the current phase handler
+        ngx.exit(ngx.HTTP_OK)
         return
     end
 
     -- Parse the result of the Redis lookup
     local backends = ans[1]
     if #backends == 0 then
-        -- TODO set a status code
+        ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE
         ngx.say("Backend not found for "..uri)
+        -- to cause quit the whole request rather than the current phase handler
+        ngx.exit(ngx.HTTP_OK)
         return
     end
     table.remove(backends, 1)
@@ -72,8 +78,10 @@
     -- Export variables
 
     if not backend then
-        -- TODO set a status code
+        ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE
         ngx.say("Backend not available")
+        -- to cause quit the whole request rather than the current phase handler
+        ngx.exit(ngx.HTTP_OK)
         return
     end
 
