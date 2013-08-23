@@ -28,7 +28,7 @@
     red:set_timeout(1000)
     local ok, err = red:connect("127.0.0.1", 6379)
     if not ok then
-        ngx.status = ngx.HTTP_SERVER_ERROR
+        ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
         ngx.say("Failed to connect to Redis: ", err)
         -- to cause quit the whole request rather than the current phase handler
         ngx.exit(ngx.HTTP_OK)
@@ -59,7 +59,6 @@
     red:smembers("dead:" .. uri_prefix)
     local ans, err = red:exec()
     if not ans then
-        -- 502 is bad gateway
         ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
         ngx.say("Lookup failed: ", err)
         -- to cause quit the whole request rather than the current phase handler
