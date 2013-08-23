@@ -18,7 +18,7 @@
        ngx.log(ngx.DEBUG, "No prefix")
        uri_prefix = ""
     else
-	    uri_prefix = uri_prefix[1]
+        uri_prefix = uri_prefix[1]
         ngx.log(ngx.STDERR, "PREFIX: ", uri_prefix)
     end
 
@@ -28,8 +28,10 @@
     red:set_timeout(1000)
     local ok, err = red:connect("127.0.0.1", 6379)
     if not ok then
-        -- TODO set a status code
+        ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
         ngx.say("Failed to connect to Redis: ", err)
+        -- to cause quit the whole request rather than the current phase handler
+        ngx.exit(ngx.HTTP_OK)
         return
     end
 
@@ -57,8 +59,10 @@
     red:smembers("dead:" .. uri_prefix)
     local ans, err = red:exec()
     if not ans then
-        -- TODO set a status code
+        ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
         ngx.say("Lookup failed: ", err)
+        -- to cause quit the whole request rather than the current phase handler
+        ngx.exit(ngx.HTTP_OK)
         return
     end
 
@@ -69,16 +73,18 @@
         -- did not match URI prefix?
         -- fall back to regular hipache matches by host then domain
         pathBackend = false
-    	backends = ans[2]
-	    if #backends == 0 then
+        backends = ans[2]
+        if #backends == 0 then
             -- domain match
-	        backends = ans[3]
-	    end
+            backends = ans[3]
+        end
     end
 
     if #backends == 0 then
-        -- TODO set a status code
+        ngx.status = 502
         ngx.say("Backend not found")
+        -- to cause quit the whole request rather than the current phase handler
+        ngx.exit(ngx.HTTP_OK)
         return
     end
     local vhost_name = backends[1]
@@ -119,8 +125,10 @@
     ngx.log(ngx.DEBUG, "backend ", backend)
 
     if not backend then
-        -- TODO set a status code
+        ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE
         ngx.say("Backend not available")
+        -- to cause quit the whole request rather than the current phase handler
+        ngx.exit(ngx.HTTP_OK)
         return
     end
 
@@ -128,21 +136,21 @@
         -- found a uri prefix match, rewrite path to backend path
         -- parse backend
         -- match 1 is up to first slash after host, match 2 is the path
-	    local backendRE = [[(.+\://[^/]*)(/.*)]]
-	    local backendMatch= ngx.re.match(backend, backendRE)
+        local backendRE = [[(.+\://[^/]*)(/.*)]]
+        local backendMatch= ngx.re.match(backend, backendRE)
 
-	    ngx.var.backend = backendMatch[1]
+        ngx.var.backend = backendMatch[1]
         if true then
             ngx.log(ngx.STDERR, "new backend ",ngx.var.backend)
         end
 
         -- path portion of backend url
-	    local newPrefix = backendMatch[2]
+        local newPrefix = backendMatch[2]
         if true then
             ngx.log(ngx.STDERR, "new prefix ", newPrefix)
         end
         -- replace incoming path prefix with new prefix (rewrite url)
-	    local newPath = string.gsub(uri, uri_prefix, newPrefix, 1)
+        local newPath = string.gsub(uri, uri_prefix, newPrefix, 1)
         ngx.log(ngx.STDERR, "new path ", newPath)
         ngx.req.set_uri(newPath)
     else
