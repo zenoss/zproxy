@@ -11,31 +11,32 @@
 PROJECT=$(PWD)
 BUILD_DIR=$(PROJECT)/build
 LIB_DIR=$(PROJECT)/lib
-INSTALL_DIR ?= $(PROJECT)/install
+INSTALL_DIR?=$(PROJECT)/install
+EXTERNAL_LIBS?=http://zenpip.zendev.org/packages
 
 NGINX=nginx-1.4.2
 NGINX_TGZ=$(NGINX).tar.gz
-NGINX_URL=http://nginx.org/download/$(NGINX_TGZ)
+NGINX_URL=$(EXTERNAL_LIBS)/$(NGINX_TGZ)
 
 LUA_JIT=LuaJIT-2.0.2
 LUA_JIT_TGZ=$(LUA_JIT).tar.gz
-LUA_JIT_URL=http://luajit.org/download/$(LUA_JIT_TGZ)
+LUA_JIT_URL=$(EXTERNAL_LIBS)/$(LUA_JIT_TGZ)
 
 NGINX_LUA_VERSION=0.8.5
 NGINX_LUA=lua-nginx-module-$(NGINX_LUA_VERSION)
 NGINX_LUA_TGZ=$(NGINX_LUA).tar.gz
-NGINX_LUA_URL=https://github.com/chaoslawful/lua-nginx-module/archive/v$(NGINX_LUA_VERSION).tar.gz
+NGINX_LUA_URL=$(EXTERNAL_LIBS)/$(NGINX_LUA_TGZ)
 
 LUA_REDIS_VERSION=0.15
 RESTY_REDIS=lua-resty-redis
 LUA_REDIS_V=$(RESTY_REDIS)-$(LUA_REDIS_VERSION)
 LUA_REDIS_TGZ=$(LUA_REDIS_V).tar.gz
-LUA_REDIS_URL=https://github.com/agentzh/lua-resty-redis/archive/v$(LUA_REDIS_VERSION).tar.gz
+LUA_REDIS_URL=$(EXTERNAL_LIBS)/$(LUA_REDIS_TGZ)
 
 NGINX_DEV_VERSION=0.2.18
 NGINX_DEV=ngx_devel_kit-$(NGINX_DEV_VERSION)
 NGINX_DEV_TGZ=$(NGINX_DEV).tar.gz
-NGINX_DEV_URL=https://github.com/simpl/ngx_devel_kit/archive/v$(NGINX_DEV_VERSION).tar.gz
+NGINX_DEV_URL=$(EXTERNAL_LIBS)/$(NGINX_DEV_TGZ)
 
 WGET = $(shell which wget)
 
@@ -88,8 +89,6 @@ $(BUILD_DIR)/$(LUA_JIT)/.d: $(LIB_DIR)/$(LUA_JIT_TGZ) $(BUILD_DIR)/.d
 
 
 
-
-.PHONY=luajit
 
 LUAJIT_INSTALL=$(ZPROXY_INSTALL)/bin/luajit
 $(ZPROXY_INSTALL)/bin/luajit: $(BUILD_DIR)/$(LUA_JIT)/.d
