@@ -45,7 +45,7 @@
     local domain_regex = [[(\.[^.]+\.[^.]+)$]]
     local domain_name = ngx.re.match(frontend, domain_regex)
     if domain_name ~= nill then
-       dpomain_name = domain_name[1]
+       domain_name = domain_name[1]
     else
        ngx.log(ngx.STDERR, "No domain name")
        domain_name = ""
@@ -60,7 +60,7 @@
     local ans, err = red:exec()
     if not ans then
         -- 502 is bad gateway
-        ngx.status = 502
+        ngx.status = ngx.HTTP_INTERNAL_SERVER_ERROR
         ngx.say("Lookup failed: ", err)
         -- to cause quit the whole request rather than the current phase handler
         ngx.exit(ngx.HTTP_OK)
@@ -82,7 +82,7 @@
     end
 
     if #backends == 0 then
-        ngx.status = ngx.HTTP_SERVICE_UNAVAILABLE
+        ngx.status = 502
         ngx.say("Backend not found")
         -- to cause quit the whole request rather than the current phase handler
         ngx.exit(ngx.HTTP_OK)
