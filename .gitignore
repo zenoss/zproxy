@@ -3,6 +3,6 @@ build
 install
 lib
 .extracted
-
+.idea
 #emacs
 *~

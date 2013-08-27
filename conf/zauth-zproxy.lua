@@ -15,32 +15,5 @@
     local frontend = extract_frontend(ngx.var.http_host)
     local domain_name = extract_domain(frontend)
     local backend = extract_backend(uri_prefix, frontend, domain_name)
-
-    local req_headers = ngx.req.get_headers()
-    -- If we don't have a basic auth header or a zauth token, quit now
-    if not req_headers['Authorization'] and not req_headers['X-ZAuth-Token'] then
-        ngx.status = ngx.HTTP_UNAUTHORIZED
-	ngx.say("Authorization required")
-	ngx.exit(ngx.HTTP_OK)
-	return
-    end
-
-    -- If we don't have a zauth token, we need to acquire one
-    -- [[ --
-    if not req_headers['X-ZAuth-Token'] then
-        local lres = ngx.location.capture ('/zauth/api/login', { 
-	   method = ngx.HTTP_GET,
-	   body = nil,
-	   share_all_vars = false,
-	   copy_all_vars = false
-	})
-        if lres.status ~= ngx.HTTP_OK then
-	   ngx.status = lres.status
-	   ngx.exit(ngx.HTTP_OK)
-	   return
-	end
-    else
-       ngx.log(ngx.STDERR, 'Found ZAuth')
-    end
-
     rewrite_backend(uri, uri_prefix, backend)
+
