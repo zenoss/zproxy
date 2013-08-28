@@ -9,16 +9,16 @@
 --#####################################################################################################################
 
 function extract_prefix(uri)
-    ngx.log(ngx.STDERR, "URI: ", uri)
+    ngx.log(ngx.INFO, "URI: ", uri)
     --match the first 3 parts of a path. eg /api/category/resource
     local pathPrefixRE = [[(^/[^/]+/[^/]+/[^/]+)]]
     local uri_prefix  = ngx.re.match(uri, pathPrefixRE)
     if uri_prefix == nil then
-        ngx.log(ngx.STDERR, "No prefix")
+        ngx.log(ngx.INFO, "No prefix")
         uri_prefix = ""
     else
         uri_prefix = uri_prefix[1]
-        ngx.log(ngx.STDERR, "PREFIX: ", uri_prefix)
+        ngx.log(ngx.INFO, "PREFIX: ", uri_prefix)
     end
     return uri_prefix
 end
@@ -40,14 +40,14 @@ function extract_domain(frontend)
     if domain_name ~= nil then
        domain_name = domain_name[1]
     else
-       ngx.log(ngx.STDERR, "No domain name")
+       ngx.log(ngx.INFO, "No domain name")
        domain_name = ""
     end
     return domain_name
 end
 
 function extract_backend(uri_prefix, frontend, domain_name)
-    ngx.log(ngx.STDERR, "uri_prefix: " .. uri_prefix .. ", frontend: " .. frontend)
+    ngx.log(ngx.INFO, "uri_prefix: " .. uri_prefix .. ", frontend: " .. frontend)
     -- Connect to Redis
     local redis = require "resty.redis"
     local red = redis:new()
@@ -60,7 +60,7 @@ function extract_backend(uri_prefix, frontend, domain_name)
         ngx.exit(ngx.HTTP_OK)
         return nil
     end
-    ngx.log(ngx.STDERR, "Connected to redis...")
+    ngx.log(ngx.INFO, "Connected to redis...")
 
     -- Redis lookup
     red:multi()
@@ -149,17 +149,17 @@ function rewrite_backend(uri, uri_prefix, backend)
 
         ngx.var.backend = backendMatch[1]
         if true then
-            ngx.log(ngx.STDERR, "new backend ",ngx.var.backend)
+            ngx.log(ngx.INFO, "new backend ",ngx.var.backend)
         end
 
         -- path portion of backend url
         local newPrefix = backendMatch[2]
         if true then
-            ngx.log(ngx.STDERR, "new prefix ", newPrefix)
+            ngx.log(ngx.INFO, "new prefix ", newPrefix)
         end
         -- replace incoming path prefix with new prefix (rewrite url)
         local newPath = string.gsub(uri, uri_prefix, newPrefix, 1)
-        ngx.log(ngx.STDERR, "new path ", newPath)
+        ngx.log(ngx.INFO, "new path ", newPath)
         ngx.req.set_uri(newPath)
     else
         -- not a path back end, should just be a host eg. http://www.host.com:8000
