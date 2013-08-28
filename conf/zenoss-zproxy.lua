@@ -19,6 +19,7 @@
     local req_headers = ngx.req.get_headers()
     -- If we don't have a basic auth header or a zauth token, quit now
     if not req_headers['Authorization'] and not req_headers['X-ZAuth-Token'] then
+        ngx.log(ngx.INFO, "No authorization provided")
         ngx.status = ngx.HTTP_UNAUTHORIZED
 	ngx.say("Authorization required")
 	ngx.exit(ngx.HTTP_OK)
@@ -35,6 +36,7 @@
 	   copy_all_vars = false
 	})
         if lres.status ~= ngx.HTTP_OK then
+           ngx.log(ngx.INFO, "Authentication failed")
 	   ngx.status = lres.status
 	   ngx.exit(ngx.HTTP_OK)
 	   return
