@@ -1,10 +1,8 @@
 --#####################################################################################################################
--- Portions of this code are Copyright (C) Zenoss, Inc. 2013, all rights reserved.
+-- Copyright (C) Zenoss, Inc. 2013, all rights reserved.
 --
 -- This content is made available according to terms specified in
 -- License.zenoss under the directory where your Zenoss product is installed.
---
--- Portions of this code are Copyright (c) 2012 DotCloud Inc <opensource@dotcloud.com>, Sam Alba <sam.alba@gmail.com>
 --
 --#####################################################################################################################
 
@@ -26,8 +24,10 @@
 	return
     end
 
+    -- Do we want to do this parsing here? 
+    -- It requires a JSON library that we don't have by default
+    json = require "json"
     -- If we don't have a zauth token, we need to acquire one
-    -- [[ --
     if not req_headers['X-ZAuth-Token'] then
         local lres = ngx.location.capture ('/zauth/api/login', { 
 	   method = ngx.HTTP_GET,
@@ -41,6 +41,16 @@
 	   ngx.exit(ngx.HTTP_OK)
 	   return
 	end
+        ngx.log(ngx.INFO, "Body: " .. lres.body)
+        -- Decode the login subrequest
+        token = json.decode(lres.body)
+        -- Set the ZAuth token in the response headers
+        ngx.header['Set-Cookie'] = {'ZAuthToken=' .. token['id'] .. '; path=/; Expires=' .. ngx.cookie_time(token['expires'])}
+        -- Set the ZAuth token in the proxy request
+        -- Do we want to set just the token, or also include the expiration?
+        ngx.req.set_header('X-ZAuth-Token', token['id'])
+        -- Should the backend be trusting this?
+        ngx.req.set_header('X-ZAuth-Expires', token['expires'])
     else
        ngx.log(ngx.STDERR, 'Found ZAuth')
     end
