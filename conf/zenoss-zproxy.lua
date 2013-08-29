@@ -26,7 +26,7 @@
 
     -- Do we want to do this parsing here? 
     -- It requires a JSON library that we don't have by default
-    json = require "json"
+    cjson = require "cjson"
     -- If we don't have a zauth token, we need to acquire one
     if not req_headers['X-ZAuth-Token'] then
         local lres = ngx.location.capture ('/zauth/api/login', { 
@@ -43,7 +43,7 @@
 	end
         ngx.log(ngx.INFO, "Body: " .. lres.body)
         -- Decode the login subrequest
-        token = json.decode(lres.body)
+        token = cjson.decode(lres.body)
         -- Set the ZAuth token in the response headers
         ngx.header['Set-Cookie'] = {'ZAuthToken=' .. token['id'] .. '; path=/; Expires=' .. ngx.cookie_time(token['expires'])}
         -- Set the ZAuth token in the proxy request

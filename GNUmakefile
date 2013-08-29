@@ -33,6 +33,11 @@ LUA_REDIS_V=$(RESTY_REDIS)-$(LUA_REDIS_VERSION)
 LUA_REDIS_TGZ=$(LUA_REDIS_V).tar.gz
 LUA_REDIS_URL=$(EXTERNAL_LIBS)/$(LUA_REDIS_TGZ)
 
+LUA_CJSON=lua-cjson-2.1.0
+LUA_CJSON_NO_V=lua-cjson
+LUA_CJSON_TGZ=$(LUA_CJSON).tar.gz
+LUA_CJSON_URL=http://www.kyne.com.au/~mark/software/download/$(LUA_CJSON_TGZ)
+
 NGINX_DEV_VERSION=0.2.18
 NGINX_DEV=ngx_devel_kit-$(NGINX_DEV_VERSION)
 NGINX_DEV_TGZ=$(NGINX_DEV).tar.gz
@@ -79,6 +84,15 @@ $(ZPROXY_INSTALL)/opt/$(RESTY_REDIS)/.d: $(LIB_DIR)/$(LUA_REDIS_TGZ) $(ZPROXY_IN
 	cd $(ZPROXY_INSTALL)/opt && tar -xvf $(LIB_DIR)/$(LUA_REDIS_TGZ) && mv $(LUA_REDIS_V) $(RESTY_REDIS)
 	@touch $@
 
+$(LIB_DIR)/$(LUA_CJSON_TGZ):
+	mkdir -p $(LIB_DIR)
+	cd $(LIB_DIR) && $(WGET) $(LUA_CJSON_URL) -O $(LUA_CJSON_TGZ)
+
+$(BUILD_DIR)/$(LUA_CJSON)/cjson.so: $(LIB_DIR)/$(LUA_CJSON_TGZ)
+	cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(LUA_CJSON_TGZ); \
+	cd $(BUILD_DIR)/$(LUA_CJSON) && patch -p0 < $(PROJECT)/cjson.diff && make
+	@touch $@
+
 $(LIB_DIR)/$(LUA_JIT_TGZ): 
 	mkdir -p $(LIB_DIR)
 	cd $(LIB_DIR) && $(WGET) $(LUA_JIT_URL)
@@ -88,20 +102,23 @@ $(BUILD_DIR)/$(LUA_JIT)/.d: $(LIB_DIR)/$(LUA_JIT_TGZ) $(BUILD_DIR)/.d
 	@touch $@
 
 
-
-
 LUAJIT_INSTALL=$(ZPROXY_INSTALL)/bin/luajit
 $(ZPROXY_INSTALL)/bin/luajit: $(BUILD_DIR)/$(LUA_JIT)/.d
 	cd $(BUILD_DIR)/$(LUA_JIT);\
 	make;\
 	make install PREFIX=$(ZPROXY_INSTALL)
 
+$(ZPROXY_INSTALL)/lib/cjson.so: $(BUILD_DIR)/$(LUA_CJSON)/cjson.so
+	mkdir -p $(ZPROXY_INSTALL)/lib
+	cp $(BUILD_DIR)/$(LUA_CJSON)/cjson.so $(ZPROXY_INSTALL)/lib
 
 NGINXDEV= $(BUILD_DIR)/$(NGINX_DEV)/.d
 NGINXLUA=$(BUILD_DIR)/$(NGINX_LUA)/.d
 LUAREDIS_INSTALL=$(ZPROXY_INSTALL)/opt/$(RESTY_REDIS)/.d
+LUACJSON_INSTALL=$(ZPROXY_INSTALL)/lib/cjson.so
 NGINX_INSTALL=$(ZPROXY_INSTALL)/sbin/nginx
-$(ZPROXY_INSTALL)/sbin/nginx: $(LUAJIT_INSTALL) $(NGINXDEV) $(NGINXLUA) $(LUAREDIS_INSTALL) $(BUILD_DIR)/$(NGINX)/.d
+
+$(ZPROXY_INSTALL)/sbin/nginx: $(LUAJIT_INSTALL) $(NGINXDEV) $(NGINXLUA) $(LUAREDIS_INSTALL) $(LUACJSON_INSTALL) $(BUILD_DIR)/$(NGINX)/.d
 	cd $(BUILD_DIR)/$(NGINX);\
 	export LUAJIT_LIB=$(ZPROXY_INSTALL)/lib;\
 	export LUAJIT_INC=$(ZPROXY_INSTALL)/include/luajit-2.0;\
@@ -117,7 +134,6 @@ $(ZPROXY_INSTALL)/sbin/nginx: $(LUAJIT_INSTALL) $(NGINXDEV) $(NGINXLUA) $(LUARED
 	make install
 
 
-
 ZPROXYCFG=$(ZPROXY_INSTALL)/conf/zproxy-nginx.conf
 $(ZPROXY_INSTALL)/conf/zproxy-nginx.conf:
 	cp conf/* $(ZPROXY_INSTALL)/conf/; \
@@ -128,9 +144,9 @@ $(ZPROXY_INSTALL)/conf/zproxy-nginx.conf:
 	mkdir -p $(ZPROXY_INSTALL)/scripts && cp scripts/* $(ZPROXY_INSTALL)/scripts/;
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) $(ZPROXY_INSTALL)
 
-
+cjson: $(LUACJSON_INSTALL)
 
 install: $(NGINX_INSTALL) $(ZPROXYCFG)
 
