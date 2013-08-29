@@ -36,7 +36,7 @@ LUA_REDIS_URL=$(EXTERNAL_LIBS)/$(LUA_REDIS_TGZ)
 LUA_CJSON=lua-cjson-2.1.0
 LUA_CJSON_NO_V=lua-cjson
 LUA_CJSON_TGZ=$(LUA_CJSON).tar.gz
-LUA_CJSON_URL=http://www.kyne.com.au/~mark/software/download/$(LUA_CJSON_TGZ)
+LUA_CJSON_URL=$(EXTERNAL_LIBS)/$(LUA_CJSON_TGZ)
 
 NGINX_DEV_VERSION=0.2.18
 NGINX_DEV=ngx_devel_kit-$(NGINX_DEV_VERSION)
@@ -90,7 +90,7 @@ $(LIB_DIR)/$(LUA_CJSON_TGZ):
 
 $(BUILD_DIR)/$(LUA_CJSON)/cjson.so: $(LIB_DIR)/$(LUA_CJSON_TGZ)
 	cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(LUA_CJSON_TGZ); \
-	cd $(BUILD_DIR)/$(LUA_CJSON) && patch -p0 < $(PROJECT)/cjson.diff && make
+	cd $(BUILD_DIR)/$(LUA_CJSON) && make
 	@touch $@
 
 $(LIB_DIR)/$(LUA_JIT_TGZ): 
