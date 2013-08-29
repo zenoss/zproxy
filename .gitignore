@@ -5,4 +5,5 @@ lib
 .extracted
 .idea
 #emacs
+\#*
 *~
