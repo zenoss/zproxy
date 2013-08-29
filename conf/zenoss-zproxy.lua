@@ -24,8 +24,6 @@ if not req_headers['Authorization'] and not req_headers['X-ZAuth-Token'] then
    return
 end
 
--- Do we want to do this parsing here? 
--- It requires a JSON library that we don't have by default
 cjson = require "cjson"
 -- If we don't have a zauth token, we need to acquire one
 if not req_headers['X-ZAuth-Token'] then
