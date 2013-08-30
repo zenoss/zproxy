@@ -15,8 +15,18 @@ local domain_name = extract_domain(frontend)
 local backend = extract_backend(uri_prefix, frontend, domain_name)
 
 local req_headers = ngx.req.get_headers()
+
+local auth_token = req_headers['X-ZAuth-Token']
+if not auth_token then
+   ngx.log(ngx.DEBUG, 'X-ZAuth-Token header was nil; checking ZAuthToken cookie')
+   auth_token = ngx.var['cookie_ZAuthToken']
+   ngx.log(ngx.DEBUG, 'ZAuthToken cookie was ' .. (auth_token or 'nil'))
+else
+   ngx.log(ngx.DEBUG, 'Found X-ZAuth-Token header')
+end
+
 -- If we don't have a basic auth header or a zauth token, quit now
-if not req_headers['Authorization'] and not req_headers['X-ZAuth-Token'] then
+if not req_headers['Authorization'] and not auth_token then
    ngx.log(ngx.INFO, "No authorization provided")
    ngx.status = ngx.HTTP_UNAUTHORIZED
    ngx.say("Authorization required")
@@ -26,7 +36,7 @@ end
 
 cjson = require "cjson"
 -- If we don't have a zauth token, we need to acquire one
-if not req_headers['X-ZAuth-Token'] then
+if not auth_token then
    local lres = ngx.location.capture ('/zauth/api/login', { 
                                          method = ngx.HTTP_GET,
                                          body = nil,
@@ -39,15 +49,13 @@ if not req_headers['X-ZAuth-Token'] then
       ngx.exit(ngx.HTTP_OK)
       return
    end
-   ngx.log(ngx.INFO, "Body: " .. lres.body)
+   ngx.log(ngx.DEBUG, "Body: " .. lres.body)
    -- Decode the login subrequest
    token = cjson.decode(lres.body)
    -- Add a ZAuth cookie to the response for future calls
    ngx.header['Set-Cookie'] = {'ZAuthToken=' .. token['id'] .. '; path=/; Expires=' .. ngx.cookie_time(token['expires'])}
    -- Set the ZAuth token in the proxy request
    ngx.req.set_header('X-ZAuth-Token', token['id'])
-else
-   ngx.log(ngx.STDERR, 'Found ZAuth')
 end
 
 rewrite_backend(uri, uri_prefix, backend)
