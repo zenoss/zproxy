@@ -16,31 +16,15 @@ local backend = extract_backend(uri_prefix, frontend, domain_name)
 
 local req_headers = ngx.req.get_headers()
 
-local auth_token = req_headers['X-ZAuth-Token']
-if not auth_token then
-   ngx.log(ngx.DEBUG, 'X-ZAuth-Token header was nil; checking ZAuthToken cookie')
-   auth_token = ngx.var['cookie_ZAuthToken']
-   if auth_token then
-      -- If we got an auth token from a cookie, let's set an X-ZAuth-Token header
-      ngx.req.set_header('X-ZAuth-Token', auth_token)
-   end
-   ngx.log(ngx.DEBUG, 'ZAuthToken cookie was ' .. (auth_token or 'nil'))
-else
-   ngx.log(ngx.DEBUG, 'Found X-ZAuth-Token header')
-end
+local auth_token = extract_auth_token(req_headers)
 
 -- If we don't have a basic auth header or a zauth token, quit now
 if not req_headers['Authorization'] and not auth_token then
-   ngx.log(ngx.INFO, "No authorization provided")
-   ngx.status = ngx.HTTP_UNAUTHORIZED
-   ngx.say("Authorization required")
-   ngx.exit(ngx.HTTP_OK)
-   return
+   return exit_unauth()
 end
 
 cjson = require "cjson"
--- If we don't have a zauth token, we need to acquire one
-
+-- Subrequest URL will be used for login or validate
 local subrequest_url
 if auth_token then
    subrequest_url = '/zauth/api/validate'
@@ -48,25 +32,23 @@ else
    subrequest_url = '/zauth/api/login'
 end
 ngx.log(ngx.DEBUG, 'Subrequest URL: ' .. subrequest_url)
+-- Make a subrequest to login
 local lres = ngx.location.capture (subrequest_url, { 
    method = ngx.HTTP_GET,
    body = nil,
    share_all_vars = false,
    copy_all_vars = false
 })
+-- If we got anything other than OK, bail out here.
 if lres.status ~= ngx.HTTP_OK then
-   ngx.log(ngx.INFO, "Authentication failed")
-   ngx.status = lres.status
-   ngx.say("Authentication failed")
-   ngx.exit(ngx.HTTP_OK)
-   return
+   return exit_authfailed(lres.status)
 end
 ngx.log(ngx.DEBUG, "Body: " .. lres.body)
 -- Decode the subrequest
 token = cjson.decode(lres.body)
 -- Add a ZAuth cookie to the response for future calls
 if not auth_token then
-   ngx.header['Set-Cookie'] = {'ZAuthToken=' .. token['id'] .. '; path=/; Expires=' .. ngx.cookie_time(token['expires'])}
+   ngx.header['Set-Cookie'] = build_cookie(token)
 end
 -- Set the ZAuth token in the proxy request
 ngx.req.set_header('X-ZAuth-Token', token['id'])

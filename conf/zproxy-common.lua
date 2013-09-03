@@ -167,4 +167,40 @@ function rewrite_backend(uri, uri_prefix, backend)
    end
 end
 
+function extract_auth_token(req_headers)
+   local auth_token = req_headers['X-ZAuth-Token']
+   if not auth_token then
+      ngx.log(ngx.DEBUG, 'X-ZAuth-Token header was nil; checking ZAuthToken cookie')
+      -- nginx magic for extracting cookies...
+      auth_token = ngx.var['cookie_ZAuthToken']
+      if auth_token then
+         -- If we got an auth token from a cookie, let's set an X-ZAuth-Token header
+         ngx.req.set_header('X-ZAuth-Token', auth_token)
+      end
+      ngx.log(ngx.DEBUG, 'ZAuthToken cookie was ' .. (auth_token or 'nil'))
+   else
+      ngx.log(ngx.DEBUG, 'Found X-ZAuth-Token header')
+   end
 
+   return auth_token
+end
+
+function exit_unauth()
+   ngx.log(ngx.INFO, "No authorization provided")
+   ngx.status = ngx.HTTP_UNAUTHORIZED
+   ngx.say("Authorization required")
+   ngx.exit(ngx.HTTP_OK)
+   return
+end
+
+function exit_authfailed(status)
+   ngx.log(ngx.INFO, "Authentication failed")
+   ngx.status = status
+   ngx.say("Authentication failed")
+   ngx.exit(ngx.HTTP_OK)
+   return
+end
+
+function build_cookie(token)
+   return {'ZAuthToken=' .. token['id'] .. '; path=/; Expires=' .. ngx.cookie_time(token['expires'])}
+end
