@@ -56,8 +56,8 @@ local lres = ngx.location.capture (subrequest_url, {
 })
 if lres.status ~= ngx.HTTP_OK then
    ngx.log(ngx.INFO, "Authentication failed")
-   ngx.say("Authentication failed")
    ngx.status = lres.status
+   ngx.say("Authentication failed")
    ngx.exit(ngx.HTTP_OK)
    return
 end
