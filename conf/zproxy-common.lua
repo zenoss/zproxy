@@ -187,16 +187,22 @@ end
 
 function exit_unauth()
    ngx.log(ngx.INFO, "No authorization provided")
+   -- No auth provided, status is unauthorized
    ngx.status = ngx.HTTP_UNAUTHORIZED
+   -- Provide some text content
    ngx.say("Authorization required")
+   -- Exiting with HTTP_OK short circuits additional processing
    ngx.exit(ngx.HTTP_OK)
    return
 end
 
 function exit_authfailed(status)
    ngx.log(ngx.INFO, "Authentication failed")
+   -- Set the HTTP response status to the value from the subrequest
    ngx.status = status
+   -- Provide some text content
    ngx.say("Authentication failed")
+   -- Exiting with HTTP_OK short circuits additional processing
    ngx.exit(ngx.HTTP_OK)
    return
 end

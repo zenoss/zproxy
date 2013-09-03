@@ -6,12 +6,12 @@
 --
 --#####################################################################################################################
 
-    local common = loadfile("conf/zproxy-common.lua")
-    common()
-    local uri = ngx.var.uri
-    local uri_prefix = extract_prefix(uri)
-    local frontend = extract_frontend(ngx.var.http_host)
-    local domain_name = extract_domain(frontend)
-    local backend = extract_backend(uri_prefix, frontend, domain_name)
-    rewrite_backend(uri, uri_prefix, backend)
+local common = loadfile("conf/zproxy-common.lua")
+common()
+local uri = ngx.var.uri
+local uri_prefix = extract_prefix(uri)
+local frontend = extract_frontend(ngx.var.http_host)
+local domain_name = extract_domain(frontend)
+local backend = extract_backend(uri_prefix, frontend, domain_name)
+rewrite_backend(uri, uri_prefix, backend)
 
