@@ -14,9 +14,7 @@ local uri_prefix = extract_prefix(uri)
 local frontend = extract_frontend(ngx.var.http_host)
 local domain_name = extract_domain(frontend)
 local backend = extract_backend(uri_prefix, frontend, domain_name)
-
 local req_headers = ngx.req.get_headers()
-
 local auth_token = extract_auth_token(req_headers)
 
 -- If we don't have a basic auth header or a zauth token, quit now
@@ -34,12 +32,14 @@ else
 end
 ngx.log(ngx.DEBUG, 'Subrequest URL: ' .. subrequest_url)
 -- Make a subrequest to login
+local substart = ngx.now()
 local lres = ngx.location.capture (subrequest_url, { 
    method = ngx.HTTP_GET,
    body = nil,
    share_all_vars = false,
    copy_all_vars = false
 })
+ngx.var.subrequest_time = ngx.now() - substart
 -- If we got anything other than OK, bail out here.
 if lres.status ~= ngx.HTTP_OK then
    return exit_authfailed(lres.status)
