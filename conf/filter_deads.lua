@@ -1,4 +1,5 @@
 --[[----------------------------------------------------------------------------
+--
 -- Portions of this code are
 -- Copyright (C) Zenoss, Inc. 2013, all rights reserved.
 --
@@ -8,6 +9,7 @@
 -- Portions of this code are Copyright (c) 2012:
 --   DotCloud Inc <opensource@dotcloud.com>, 
 --   Sam Alba <sam.alba@gmail.com>
+--
 --]]----------------------------------------------------------------------------
 
 local code = ngx.status
