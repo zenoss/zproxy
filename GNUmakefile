@@ -88,8 +88,8 @@ $(LIB_DIR)/$(LUA_CJSON_TGZ):
 	mkdir -p $(LIB_DIR)
 	cd $(LIB_DIR) && $(WGET) $(LUA_CJSON_URL) -O $(LUA_CJSON_TGZ)
 
-$(BUILD_DIR)/$(LUA_CJSON)/cjson.so: $(LIB_DIR)/$(LUA_CJSON_TGZ)
-	cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(LUA_CJSON_TGZ); \
+$(BUILD_DIR)/$(LUA_CJSON)/cjson.so: $(ZPROXY_INSTALL)/bin/luajit $(LIB_DIR)/$(LUA_CJSON_TGZ)
+	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(LUA_CJSON_TGZ); \
 	cd $(BUILD_DIR)/$(LUA_CJSON) && make
 	@touch $@
 
