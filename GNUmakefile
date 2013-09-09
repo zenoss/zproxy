@@ -90,7 +90,7 @@ $(LIB_DIR)/$(LUA_CJSON_TGZ):
 
 $(BUILD_DIR)/$(LUA_CJSON)/cjson.so: $(ZPROXY_INSTALL)/bin/luajit $(LIB_DIR)/$(LUA_CJSON_TGZ)
 	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(LUA_CJSON_TGZ); \
-	cd $(BUILD_DIR)/$(LUA_CJSON) && make
+	cd $(BUILD_DIR)/$(LUA_CJSON) && make INSTALL_DIR="$(INSTALL_DIR)"
 	@touch $@
 
 $(LIB_DIR)/$(LUA_JIT_TGZ): 
