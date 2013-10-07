@@ -86,13 +86,13 @@ ext_tgz_list = $(addsuffix .tar.gz,$(ext_blddir_list))
 
 target_dir = $(_DESTDIR)$(prefix)
 
-target_dir_list = bin sbin lib conf scripts etc log share
+target_subdirs = bin sbin lib conf scripts etc log share
 
 build_mkdirs = $(externaldir) $(exportdir)
 
 # NB: Intentional usage of _PREFIX and PREFIX here to avoid circular dependency.
-install_mkdirs = \
-    $(target_dir) $(addprefix $(target_dir)/,$(target_dir_list))
+install_subdirs = \
+    $(addprefix $(target_dir)/,$(target_subdirs))
 
 #============================================================================
 # Subset of standard build targets our makefiles should implement.  
@@ -108,7 +108,10 @@ help: dflt_component_help
 $(build_mkdirs):
 	$(call cmd,MKDIR,$@)
 
-$(install_mkdirs):
+$(target_dir):
+	$(call cmd,INSTALLDIR,$@,775,$(INST_OWNER),$(INST_GROUP))
+
+$(install_subdirs): | $(target_dir)
 	$(call cmd,INSTALLDIR,$@,775,$(INST_OWNER),$(INST_GROUP))
 
 # Retrieve (source) tar.gz packages
@@ -232,7 +235,7 @@ targets = \
 	$(target_dir)/sbin/zproxy
 
 .PHONY: install installhere
-install installhere: $(targets) | $(install_mkdirs)
+install installhere: $(targets) | $(install_subdirs)
 	$(call cmd,COPY,-a,$(exportdir)/bin,$(target_dir))
 	$(call cmd,COPY,-a,$(exportdir)/sbin,$(target_dir))
 	$(call cmd,COPY,-a,$(exportdir)/share,$(target_dir))
@@ -242,7 +245,7 @@ install installhere: $(targets) | $(install_mkdirs)
 
 .PHONY: uninstall
 uninstall:
-	$(call cmd,RMDIR,$(_DESTDIR)$(prefix))
+	$(call cmd,RMDIR,$(target_dir))
 
 .PHONY: uninstallhere
 uninstallhere:
