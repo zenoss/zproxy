@@ -144,30 +144,6 @@ _SAFE_UNINSTALL = $(strip $(SAFE_UNINSTALL))
 # If the sysconfdir (e.g., etc) has not been configured in, default to a 
 # component-defined sysconfdir.
 
-ifndef INST_OWNER
-    ifeq "$(USER)" "root"
-        ifeq "$(SUDO_USER)" ""
-            INST_OWNER = zenoss
-        else
-            INST_OWNER = $(SUDO_USER)
-        endif
-    else
-        INST_OWNER = $(USER)
-    endif
-endif
-
-ifndef INST_GROUP
-    ifeq "$(USER)" "root"
-        ifeq "$(SUDO_USER)" ""
-            INST_GROUP = zenoss
-        else
-            INST_GROUP := $(shell id -g -n $(SUDO_USER))
-        endif
-    else
-        INST_GROUP := $(shell id -g -n $(USER))
-    endif
-endif
-
 # Distro.  This dies after configure comes online.  OSX, for example, has backlevel 
 # command-line tools (circa 1999) that don't support modern options.
 DISTRO := $(shell uname -s)
@@ -192,6 +168,7 @@ GCC         ?= gcc
 CC           = $(GCC)
 GREP         = grep
 HEAD         = head
+ID           = id
 INSTALL      = install
 JAVA         = java
 LN           = ln
@@ -225,7 +202,7 @@ ifndef CHECK_TOOLS
     # Easy to override at component level for component-specific tool sets.
 
     CHECK_TOOLS  = $(AWK)  $(CURL) $(CUT)  $(CHOWN)  $(DATE)  $(EGREP)
-    CHECK_TOOLS += $(FIND) $(GCC)  $(HEAD) $(JAVA)   $(LN)    $(MKDIR)
+    CHECK_TOOLS += $(FIND) $(GCC)  $(HEAD) $(ID)     $(JAVA)  $(LN)  $(MKDIR)
     CHECK_TOOLS += $(MVN)  $(PIP)  $(PR)   $(PYTHON) $(RM)    $(READELF)
     CHECK_TOOLS += $(SED)  $(SORT) $(TAR)  $(TEE)    $(TOUCH) $(XARGS)
 
@@ -297,6 +274,23 @@ INSTALL_DATA       = $(INSTALL) -m $(DATA_FILE_PERMS)
 LINE77            := "-----------------------------------------------------------------------------"
 LINE              := $(LINE77)
 
+# Set the owner and group for the insall.
+ifndef INST_OWNER
+    ifeq "$(USER)" "root"
+        INST_OWNER = $(or $(SUDO_USER), $(USER))
+    else
+        INST_OWNER = $(USER)
+    endif
+endif
+
+ifndef INST_GROUP
+    ifeq "$(SUDO_USER)" ""
+        INST_GROUP := $(shell $(ID) -g -n $(USER))
+    else
+        INST_GROUP := $(shell $(ID) -g -n $(SUDO_USER))
+    endif
+endif
+
 #----------------------------------------------------------------------------
 # Control the verbosity of the build.  
 #
@@ -354,9 +348,9 @@ ifeq "$(ZBUILD_VERBOSE)" "1"
     # to the console and log file.
     # PIPESTATUS places a dependency upon bash.
     #--------------------------------------------------------------
-    cmd = @$(if $($(quiet)cmd_$(1)),\
+    cmd = @$(and $($(quiet)cmd_$(1)),\
         (echo '  $(TIME_TAG) $($(quiet)cmd_$(1)) ' | tee -a $(ABS_BUILD_LOG)) &&) $(cmd_$(1)) 2>&1 | $(TEE) -a $(ABS_BUILD_LOG) ; exit $${PIPESTATUS[0]}
-    cmd_noat = $(if $($(quiet)cmd_$(1)),\
+    cmd_noat = $(and $($(quiet)cmd_$(1)),\
         (echo '  $(TIME_TAG) $($(quiet)cmd_$(1)) ' | tee -a $(ABS_BUILD_LOG)) &&) $(cmd_$(1)) 2>&1 | $(TEE) -a $(ABS_BUILD_LOG) ; exit $${PIPESTATUS[0]}
 
     define echol
@@ -376,9 +370,9 @@ else
     # we can tee stderr to the console and log.
     #--------------------------------------------------------------
     # (echo GCC_FAILS | tee -a blah.log) && (echo 'gcc --bummer' 2>&1 1>> blah.log ; gcc --bummer 3>&1 1>>blah.log 2>&3 | tee -a blah.log ; exit ${PIPESTATUS[0]})
-    cmd = @$(if $($(quiet)cmd_$(1)),\
+    cmd = @$(and $($(quiet)cmd_$(1)),\
         (echo '  $(TIME_TAG) $($(quiet)cmd_$(1))  ' | tee -a $(ABS_BUILD_LOG)) &&) echo '$(cmd_$(1))' 2>&1 1>> $(ABS_BUILD_LOG) ; $(cmd_$(1)) 3>&1 1>>$(ABS_BUILD_LOG) 2>&3 | $(TEE) -a $(ABS_BUILD_LOG) ; exit $${PIPESTATUS[0]}
-    cmd_noat = $(if $($(quiet)cmd_$(1)),\
+    cmd_noat = $(and $($(quiet)cmd_$(1)),\
         (echo '  $(TIME_TAG) $($(quiet)cmd_$(1))  ' | tee -a $(ABS_BUILD_LOG)) &&) echo '$(cmd_$(1))' 2>&1 1>> $(ABS_BUILD_LOG) ; $(cmd_$(1)) 3>&1 1>>$(ABS_BUILD_LOG) 2>&3 | $(TEE) -a $(ABS_BUILD_LOG) ; exit $${PIPESTATUS[0]}
     define echol
         $(if $(2),echo "  $(TIME_TAG) "$2,echo "  $(TIME_TAG) "$1) | $(TEE) -a $(ABS_BUILD_LOG)

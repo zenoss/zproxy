@@ -46,7 +46,7 @@ endif
 
 #============================================================================
 # Variables for this makefile
-prefix                 := $(prefix)/$(COMPONENT)
+_prefix                := $(prefix)/$(COMPONENT)
 srcdir                  = src
 bldtop                  = build
 externaldir             = $(bldtop)/external
@@ -84,7 +84,7 @@ _external_pkgs  = $(nginx_pkg) $(nginx_dev_pkg) \
 ext_blddir_list = $(addprefix $(externaldir)/,$(_external_pkgs))
 ext_tgz_list = $(addsuffix .tar.gz,$(ext_blddir_list))
 
-target_dir = $(_DESTDIR)$(prefix)
+target_dir = $(_DESTDIR)$(_prefix)
 
 target_subdirs = bin sbin lib conf scripts etc log share
 
@@ -129,7 +129,7 @@ $(ext_blddir_list): % : %.tar.gz
 lua_jit_obj = $(exportdir)/bin/luajit
 
 $(lua_jit_obj): $(externaldir)/$(lua_jit_pkg)
-	$(call cmd,BUILD,$@,$<,install,PREFIX=$(abspath $(exportdir)))
+	$(call cmd,BUILD,$@,$<,install,DESTDIR= PREFIX=$(abspath $(exportdir)))
 
 .PHONY: luajit
 luajit: $(lua_jit_obj)
@@ -140,10 +140,10 @@ luajit: $(lua_jit_obj)
 # ============================================================================
 # Lua CJSON Build
 
-lua_cjson_obj = $(exportdir)/lib/cjson.so
+lua_cjson_obj = $(exportdir)/lib/lua/5.1/cjson.so
 
 $(lua_cjson_obj): $(externaldir)/$(lua_cjson_pkg) $(lua_jit_obj)
-	$(call cmd,BUILD,$@,$<,install,PREFIX=$(abspath $(exportdir)))
+	$(call cmd,BUILD,$@,$<,install,DESTDIR= PREFIX=$(abspath $(exportdir)))
 
 .PHONY: luacjson
 luacjson: $(lua_cjson_obj)
@@ -176,7 +176,7 @@ $(nginx_obj): $(nginx_dependencies)
 	export LUAJIT_INC=$(abspath $(exportdir))/include/luajit-2.0; \
 	pushd $< 2>&1 >/dev/null; \
 	$(call cmd_noat,CFGBLD,$@,$(nginx_configure_opts))
-	$(call cmd,BUILD,$@,$<,install,-j2)
+	$(call cmd,BUILD,$@,$<,install,-j2 DESTDIR=)
 
 .PHONY: nginx
 nginx: $(nginx_obj)
@@ -242,6 +242,7 @@ install installhere: $(targets) | $(install_subdirs)
 	$(call cmd,COPY,-a,$(exportdir)/html,$(target_dir))
 	$(call cmd,COPY,-a,$(exportdir)/lib,$(target_dir))
 	$(call cmd,COPY,-a,$(srcdir)/scripts,$(target_dir))
+	$(call cmd,CHOWN,$(INST_OWNER),$(INST_GROUP),$(target_dir))
 
 .PHONY: uninstall
 uninstall:
