@@ -50,7 +50,7 @@ _prefix                := $(prefix)/$(COMPONENT)
 srcdir                  = src
 bldtop                  = build
 externaldir             = $(bldtop)/external
-exportdir               = $(bldtop)/export
+exportdir               = $(bldtop)/export/$(_prefix)
 
 pkg_pypi_url           ?= http://zenpip.zendev.org/packages
 
@@ -162,7 +162,7 @@ nginx_dependencies = $(externaldir)/$(nginx_pkg) \
 	$(lua_jit_obj)
 
 nginx_configure_opts = \
-	--prefix=$(abspath $(exportdir)) \
+	--prefix=$(_prefix) \
 	--add-module=$(abspath $(externaldir)/$(nginx_dev_pkg)) \
 	--add-module=$(abspath $(externaldir)/$(lua_nginx_pkg)) \
 	--with-http_ssl_module \
@@ -176,7 +176,8 @@ $(nginx_obj): $(nginx_dependencies)
 	export LUAJIT_INC=$(abspath $(exportdir))/include/luajit-2.0; \
 	pushd $< 2>&1 >/dev/null; \
 	$(call cmd_noat,CFGBLD,$@,$(nginx_configure_opts))
-	$(call cmd,BUILD,$@,$<,install,-j2 DESTDIR=)
+	@# DESTDIR=$(bldtop)/export is on purpose.
+	$(call cmd,BUILD,$@,$<,install,-j2 DESTDIR=$(abspath $(bldtop)/export))
 
 .PHONY: nginx
 nginx: $(nginx_obj)
