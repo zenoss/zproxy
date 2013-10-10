@@ -86,7 +86,7 @@ ext_tgz_list = $(addsuffix .tar.gz,$(ext_blddir_list))
 
 target_dir = $(_DESTDIR)$(_prefix)
 
-target_subdirs = bin sbin lib conf scripts etc log share
+target_subdirs = bin sbin lib conf scripts etc logs share
 
 build_mkdirs = $(externaldir) $(exportdir)
 
