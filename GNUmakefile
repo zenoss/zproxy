@@ -50,7 +50,7 @@ _prefix                := $(prefix)/$(COMPONENT)
 srcdir                  = src
 bldtop                  = build
 externaldir             = $(bldtop)/external
-exportdir               = $(bldtop)/export/$(_prefix)
+exportdir               = $(bldtop)/export
 
 pkg_pypi_url           ?= http://zenpip.zendev.org/packages
 
@@ -88,7 +88,7 @@ target_dir = $(_DESTDIR)$(_prefix)
 
 target_subdirs = bin sbin lib conf scripts etc logs share
 
-build_mkdirs = $(externaldir) $(exportdir)
+build_mkdirs = $(externaldir) $(exportdir)$(_prefix)
 
 # NB: Intentional usage of _PREFIX and PREFIX here to avoid circular dependency.
 install_subdirs = \
@@ -126,10 +126,10 @@ $(ext_blddir_list): % : %.tar.gz
 # ============================================================================
 # LuaJIT Build
 
-lua_jit_obj = $(exportdir)/bin/luajit
+lua_jit_obj = $(exportdir)$(_prefix)/bin/luajit
 
 $(lua_jit_obj): $(externaldir)/$(lua_jit_pkg)
-	$(call cmd,BUILD,$@,$<,install,DESTDIR= PREFIX=$(abspath $(exportdir)))
+	$(call cmd,BUILD,$@,$<,install,DESTDIR=$(abspath $(exportdir)) PREFIX=$(_prefix))
 
 .PHONY: luajit
 luajit: $(lua_jit_obj)
@@ -138,12 +138,23 @@ luajit: $(lua_jit_obj)
 # ============================================================================
 
 # ============================================================================
+# Lua Resty Redis Build
+
+lua_resty_redis_obj = $(exportdir)$(_prefix)/lib/lua/5.1/resty/redis.lua
+
+$(lua_resty_redis_obj): $(externaldir)/$(lua_resty_redis_pkg) $(lua_jit_obj)
+	$(call cmd,BUILD,$@,$<,install,DESTDIR=$(abspath $(exportdir)) PREFIX=$(_prefix) LUA_VERSION=5.1)
+
+.PHONY: luaresty
+luaresty: $(lua_resty_redis_obj)
+
+# ============================================================================
 # Lua CJSON Build
 
-lua_cjson_obj = $(exportdir)/lib/lua/5.1/cjson.so
+lua_cjson_obj = $(exportdir)$(_prefix)/lib/lua/5.1/cjson.so
 
 $(lua_cjson_obj): $(externaldir)/$(lua_cjson_pkg) $(lua_jit_obj)
-	$(call cmd,BUILD,$@,$<,install,DESTDIR= PREFIX=$(abspath $(exportdir)))
+	$(call cmd,BUILD,$@,$<,install,DESTDIR=$(abspath $(exportdir)) PREFIX=$(_prefix) LUA_INCLUDE_DIR=$(abspath $(exportdir))$(_prefix)/include/luajit-2.0)
 
 .PHONY: luacjson
 luacjson: $(lua_cjson_obj)
@@ -154,7 +165,7 @@ luacjson: $(lua_cjson_obj)
 # ============================================================================
 # NGINX Build
 
-nginx_obj = $(exportdir)/sbin/nginx
+nginx_obj = $(exportdir)$(_prefix)/sbin/nginx
 
 nginx_dependencies = $(externaldir)/$(nginx_pkg) \
 	$(externaldir)/$(nginx_dev_pkg) \
@@ -172,8 +183,8 @@ nginx_configure_opts = \
 	--without-http_fastcgi_module
 
 $(nginx_obj): $(nginx_dependencies)
-	@export LUAJIT_LIB=$(abspath $(exportdir))/lib; \
-	export LUAJIT_INC=$(abspath $(exportdir))/include/luajit-2.0; \
+	@export LUAJIT_LIB=$(abspath $(exportdir))$(_prefix)/lib; \
+	export LUAJIT_INC=$(abspath $(exportdir))$(_prefix)/include/luajit-2.0; \
 	pushd $< 2>&1 >/dev/null; \
 	$(call cmd_noat,CFGBLD,$@,$(nginx_configure_opts))
 	@# DESTDIR=$(bldtop)/export is on purpose.
@@ -207,7 +218,7 @@ target_conf_files = $(addprefix $(target_dir)/conf/,$(conf_files))
 export_conf_files = mime.types mime.types.default nginx.conf.default koi-utf koi-win win-utf
 nginx_conf_files = $(addprefix $(target_dir)/conf/,$(export_conf_files))
 
-$(nginx_conf_files): $(target_dir)/conf/% : $(exportdir)/conf/% | $(target_dir)/conf
+$(nginx_conf_files): $(target_dir)/conf/% : $(exportdir)$(_prefix)/conf/% | $(target_dir)/conf
 	$(call cmd,INSTALL,$<,$@,664,$(INST_OWNER),$(INST_GROUP))
 
 $(target_conf_files): $(target_dir)/conf/% : $(srcdir)/conf/% | $(target_dir)/conf
@@ -227,7 +238,7 @@ clean:
 	$(call cmd,RMDIR,$(bldtop))
 
 .PHONY: build
-build: $(nginx_obj) $(lua_jit_obj) $(lua_cjson_obj)
+build: $(nginx_obj) $(lua_jit_obj) $(lua_cjson_obj) $(lua_resty_redis_obj)
 
 targets = \
 	$(target_conf_files) \
@@ -237,11 +248,11 @@ targets = \
 
 .PHONY: install installhere
 install installhere: $(targets) | $(install_subdirs)
-	$(call cmd,COPY,-a,$(exportdir)/bin,$(target_dir))
-	$(call cmd,COPY,-a,$(exportdir)/sbin,$(target_dir))
-	$(call cmd,COPY,-a,$(exportdir)/share,$(target_dir))
-	$(call cmd,COPY,-a,$(exportdir)/html,$(target_dir))
-	$(call cmd,COPY,-a,$(exportdir)/lib,$(target_dir))
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/bin,$(target_dir))
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/sbin,$(target_dir))
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/share,$(target_dir))
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/html,$(target_dir))
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/lib,$(target_dir))
 	$(call cmd,COPY,-a,$(srcdir)/scripts,$(target_dir))
 	$(call cmd,CHOWN,$(INST_OWNER),$(INST_GROUP),$(target_dir))
 
