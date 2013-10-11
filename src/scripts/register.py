@@ -69,6 +69,7 @@ def register(frontend, backend, redisHost, redisPort):
         sys.exit(1)
 
     output = redis_cli(redisHost, redisPort, 'evalsha', output, '1', frontend, backend)
+    redis_cli(redisHost, redisPort, 'save')
     return output
 
 
@@ -80,6 +81,7 @@ def unregister(frontend, backend, redisHost, redisPort):
         sys.exit(1)
 
     output = redis_cli(redisHost, redisPort, 'evalsha', output, '1', frontend, backend)
+    redis_cli(redisHost, redisPort, 'save')
     return output
 
 
@@ -108,6 +110,8 @@ def load_script(host, port, name, path):
         script = "\n".join(scriptLines)
         hash = redis_cli(host, port, "script", "load", script)
         redis_cli(host, port, "hset", "scripts", name, hash)
+
+    redis_cli(host, port, 'save')
 
 
 if __name__ == '__main__':
