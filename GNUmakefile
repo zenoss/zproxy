@@ -233,6 +233,8 @@ $(target_dir)/sbin/zproxy: $(srcdir)/zproxy | $(target_dir)/sbin
 # End ZProxy Config File Build
 # ============================================================================
 
+LN_OPTS = -srf
+
 .PHONY: clean
 clean:
 	$(call cmd,RMDIR,$(bldtop))
