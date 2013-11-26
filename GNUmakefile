@@ -31,23 +31,19 @@ COMPONENT = zproxy
 #
 #     ./zenmagic.mk ../zenmagic.mk ../../zenmagic.mk ../../../zenmagic.mk
 #---------------------------------------------------------------------------#
-NEAREST_ZENMAGIC_MK := $(word 1,$(wildcard ./zenmagic.mk $(shell for slash in $$(echo $(abspath .) | sed -e "s|.*\(/obj/\)\(.*\)|\1\2|g" -e "s|.*\(/src/\)\(.*\)|\1\2|g" | sed -e "s|[^/]||g" -e "s|/|/ |g"); do string=$${string}../;echo $${string}zenmagic.mk; done | xargs echo)))
+NEAREST_ZENMAGIC_MK := $(word 1,$(wildcard ./zenmagic.mk $(shell for slash in $$(echo $(abspath .) | sed -e "s|.*\(/obj/\)\(.*\)|\1\2|g" | sed -e "s|[^/]||g" -e "s|/|/ |g"); do string=$${string}../;echo $${string}zenmagic.mk; done | xargs echo)))
 
 ifeq "$(NEAREST_ZENMAGIC_MK)" ""
     $(warning "Missing zenmagic.mk needed by the $(COMPONENT)-component makefile.")
     $(warning "Unable to find our file of build idioms in the current or parent directories.")
     $(error   "A fully populated src tree usually resolves that.")
 else
-    #ifneq "$(MAKECMDGOALS)" ""
-    #    $(warning "Including $(NEAREST_ZENMAGIC_MK) $(MAKECMDGOALS)")
-    #endif
     include $(NEAREST_ZENMAGIC_MK)
 endif
 
 #============================================================================
 # Variables for this makefile
 _prefix                := $(prefix)/$(COMPONENT)
-srcdir                  = src
 bldtop                  = build
 externaldir             = $(bldtop)/external
 exportdir               = $(bldtop)/export
@@ -209,8 +205,8 @@ nginx: $(nginx_obj)
 #             + lib
 #             + share
 
-conf_files = $(notdir $(wildcard $(srcdir)/conf/*))
-script_files = $(notdir $(wildcard $(srcdir)/scripts/*))
+conf_files = $(notdir $(wildcard $(pkgsrcdir)/conf/*))
+script_files = $(notdir $(wildcard $(pkgsrcdir)/scripts/*))
 
 target_script_files = $(addprefix $(target_dir)/scripts/,$(script_files))
 target_conf_files = $(addprefix $(target_dir)/conf/,$(conf_files))
@@ -221,13 +217,13 @@ nginx_conf_files = $(addprefix $(target_dir)/conf/,$(export_conf_files))
 $(nginx_conf_files): $(target_dir)/conf/% : $(exportdir)$(_prefix)/conf/% | $(target_dir)/conf
 	$(call cmd,INSTALL,$<,$@,664,$(INST_OWNER),$(INST_GROUP))
 
-$(target_conf_files): $(target_dir)/conf/% : $(srcdir)/conf/% | $(target_dir)/conf
+$(target_conf_files): $(target_dir)/conf/% : $(pkgsrcdir)/conf/% | $(target_dir)/conf
 	$(call cmd,INSTALL,$<,$@,664,$(INST_OWNER),$(INST_GROUP))
 
 $(target_dir)/conf/nginx.conf: | $(target_dir)/conf/zproxy-nginx.conf
 	$(call cmd,SYMLINK,$(target_dir)/conf/zproxy-nginx.conf,$@)
 
-$(target_dir)/sbin/zproxy: $(srcdir)/zproxy | $(target_dir)/sbin
+$(target_dir)/sbin/zproxy: $(pkgsrcdir)/zproxy | $(target_dir)/sbin
 	$(call cmd,INSTALL,$<,$@,774,$(INST_OWNER),$(INST_GROUP))
 
 # End ZProxy Config File Build
@@ -255,8 +251,8 @@ install installhere: $(targets) | $(install_subdirs)
 	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/share,$(target_dir))
 	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/html,$(target_dir))
 	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/lib,$(target_dir))
-	$(call cmd,COPY,-a,$(srcdir)/scripts,$(target_dir))
-	$(call cmd,CHOWN,$(INST_OWNER),$(INST_GROUP),$(target_dir))
+	$(call cmd,COPY,-a,$(pkgsrcdir)/scripts,$(target_dir))
+	$(call cmd,CHOWN,,$(INST_OWNER),$(INST_GROUP),$(target_dir))
 
 .PHONY: uninstall
 uninstall:
