@@ -21,8 +21,8 @@ function (Settings) {
      * kibana installed on. You probably want to set it to the FQDN of your
      * elasticsearch host
      */
-      // NOTE: this will only work from within a container
-    elasticsearch: "http://172.17.42.1:8787/elastic",
+      elasticsearch: "http://"+window.location.hostname+":9200",
+
 
     /** @scratch /configuration/config.js/5
      * ==== default_route
