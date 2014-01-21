@@ -21,9 +21,8 @@ function (Settings) {
      * kibana installed on. You probably want to set it to the FQDN of your
      * elasticsearch host
      */
-      elasticsearch: "http://"+window.location.hostname+":9200",
-
-
+      elasticsearch: "http://" + window.location.host +  "/api/controlplane/elasticsearch",
+	  
     /** @scratch /configuration/config.js/5
      * ==== default_route
      *
