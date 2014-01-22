@@ -256,6 +256,7 @@ install installhere: $(targets) | $(install_subdirs)
 	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/html,$(target_dir))
 	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/lib,$(target_dir))
 	$(call cmd,COPY,-a,$(srcdir)/scripts,$(target_dir))
+	$(call cmd,COPY,-a,$(srcdir)/kibana,$(target_dir)/html/logview)
 	$(call cmd,CHOWN,$(INST_OWNER),$(INST_GROUP),$(target_dir))
 
 .PHONY: uninstall
