@@ -1,152 +1,268 @@
-##############################################################################
+#=============================================================================
 #
 # Copyright (C) Zenoss, Inc. 2013, all rights reserved.
 #
 # This content is made available according to terms specified in
 # License.zenoss under the directory where your Zenoss product is installed.
 #
-##############################################################################
+#=============================================================================
+.DEFAULT_GOAL := help # all|build|clean|distclean|devinstall|install|help
 
+#============================================================================
+# Build component configuration.
+#
+# Beware of trailing spaces.
+# Don't let your editor turn tabs into spaces or vice versa.
+#============================================================================
+COMPONENT = zproxy
 
-PROJECT=$(PWD)
-BUILD_DIR=$(PROJECT)/build
-LIB_DIR=$(PROJECT)/lib
-INSTALL_DIR?=$(PROJECT)/install
-EXTERNAL_LIBS?=http://zenpip.zendev.org/packages
+#============================================================================
+# Hide common build macros, idioms, and default rules in a separate file.
+#============================================================================
 
-NGINX=nginx-1.4.2
-NGINX_TGZ=$(NGINX).tar.gz
-NGINX_URL=$(EXTERNAL_LIBS)/$(NGINX_TGZ)
+#---------------------------------------------------------------------------#
+# Pull in zenmagic.mk
+#---------------------------------------------------------------------------#
+# Locate and include common build idioms tucked away in 'zenmagic.mk'
+# This holds convenience macros and default target implementations.
+#
+# Generate a list of directories starting here and going up the tree where we
+# should look for an instance of zenmagic.mk to include.
+#
+#     ./zenmagic.mk ../zenmagic.mk ../../zenmagic.mk ../../../zenmagic.mk
+#---------------------------------------------------------------------------#
+NEAREST_ZENMAGIC_MK := $(word 1,$(wildcard ./zenmagic.mk $(shell for slash in $$(echo $(abspath .) | sed -e "s|.*\(/obj/\)\(.*\)|\1\2|g" -e "s|.*\(/src/\)\(.*\)|\1\2|g" | sed -e "s|[^/]||g" -e "s|/|/ |g"); do string=$${string}../;echo $${string}zenmagic.mk; done | xargs echo)))
 
-LUA_JIT=LuaJIT-2.0.2
-LUA_JIT_TGZ=$(LUA_JIT).tar.gz
-LUA_JIT_URL=$(EXTERNAL_LIBS)/$(LUA_JIT_TGZ)
+ifeq "$(NEAREST_ZENMAGIC_MK)" ""
+    $(warning "Missing zenmagic.mk needed by the $(COMPONENT)-component makefile.")
+    $(warning "Unable to find our file of build idioms in the current or parent directories.")
+    $(error   "A fully populated src tree usually resolves that.")
+else
+    #ifneq "$(MAKECMDGOALS)" ""
+    #    $(warning "Including $(NEAREST_ZENMAGIC_MK) $(MAKECMDGOALS)")
+    #endif
+    include $(NEAREST_ZENMAGIC_MK)
+endif
 
-NGINX_LUA_VERSION=0.8.5
-NGINX_LUA=lua-nginx-module-$(NGINX_LUA_VERSION)
-NGINX_LUA_TGZ=$(NGINX_LUA).tar.gz
-NGINX_LUA_URL=$(EXTERNAL_LIBS)/$(NGINX_LUA_TGZ)
+#============================================================================
+# Variables for this makefile
+_prefix                := $(prefix)/$(COMPONENT)
+srcdir                  = src
+bldtop                  = build
+externaldir             = $(bldtop)/external
+exportdir               = $(bldtop)/export
 
-LUA_REDIS_VERSION=0.15
-RESTY_REDIS=lua-resty-redis
-LUA_REDIS_V=$(RESTY_REDIS)-$(LUA_REDIS_VERSION)
-LUA_REDIS_TGZ=$(LUA_REDIS_V).tar.gz
-LUA_REDIS_URL=$(EXTERNAL_LIBS)/$(LUA_REDIS_TGZ)
+pkg_pypi_url           ?= http://zenpip.zendev.org/packages
 
-LUA_CJSON=lua-cjson-2.1.0
-LUA_CJSON_NO_V=lua-cjson
-LUA_CJSON_TGZ=$(LUA_CJSON).tar.gz
-LUA_CJSON_URL=$(EXTERNAL_LIBS)/$(LUA_CJSON_TGZ)
+nginx                   = nginx
+nginx_version           = 1.4.2
+nginx_pkg               = $(nginx)-$(nginx_version)
 
-NGINX_DEV_VERSION=0.2.18
-NGINX_DEV=ngx_devel_kit-$(NGINX_DEV_VERSION)
-NGINX_DEV_TGZ=$(NGINX_DEV).tar.gz
-NGINX_DEV_URL=$(EXTERNAL_LIBS)/$(NGINX_DEV_TGZ)
+nginx_dev               = ngx_devel_kit
+nginx_dev_version       = 0.2.18
+nginx_dev_pkg           = $(nginx_dev)-$(nginx_dev_version)
 
-WGET = $(shell which wget)
+lua_jit                 = LuaJIT
+lua_jit_version         = 2.0.2
+lua_jit_pkg             = $(lua_jit)-$(lua_jit_version)
 
-ZPROXY_INSTALL=$(INSTALL_DIR)/zproxy
-SUPERVISORD_DIR = $(INSTALL_DIR)/etc/supervisor
+lua_nginx               = lua-nginx-module
+lua_nginx_version       = 0.8.5
+lua_nginx_pkg           = $(lua_nginx)-$(lua_nginx_version)
 
-%/.d:
-	@mkdir -p $(@D)
+lua_resty_redis         = lua-resty-redis
+lua_resty_redis_version = 0.15
+lua_resty_redis_pkg     = $(lua_resty_redis)-$(lua_resty_redis_version)
+
+lua_cjson               = lua-cjson
+lua_cjson_version       = 2.1.0
+lua_cjson_pkg           = $(lua_cjson)-$(lua_cjson_version)
+
+_external_pkgs  = $(nginx_pkg) $(nginx_dev_pkg) \
+	$(lua_jit_pkg) $(lua_nginx_pkg) $(lua_resty_redis_pkg) $(lua_cjson_pkg)
+
+ext_blddir_list = $(addprefix $(externaldir)/,$(_external_pkgs))
+ext_tgz_list = $(addsuffix .tar.gz,$(ext_blddir_list))
+
+target_dir = $(_DESTDIR)$(_prefix)
+
+target_subdirs = bin sbin lib conf scripts etc logs share
+
+build_mkdirs = $(externaldir) $(exportdir)$(_prefix)
+
+# NB: Intentional usage of _PREFIX and PREFIX here to avoid circular dependency.
+install_subdirs = \
+    $(addprefix $(target_dir)/,$(target_subdirs))
+
+#============================================================================
+# Subset of standard build targets our makefiles should implement.  
+#
+# See: http://www.gnu.org/prep/standards/html_node/Standard-Targets.html#Standard-Targets
+#============================================================================
+
+help: dflt_component_help
+	@echo Using common build idioms from $(NEAREST_ZENMAGIC_MK)
+	@echo
+
+# Create the build directory paths
+$(build_mkdirs):
+	$(call cmd,MKDIR,$@)
+
+$(target_dir):
+	$(call cmd,INSTALLDIR,$@,775,$(INST_OWNER),$(INST_GROUP))
+
+$(install_subdirs): | $(target_dir)
+	$(call cmd,INSTALLDIR,$@,775,$(INST_OWNER),$(INST_GROUP))
+
+# Retrieve (source) tar.gz packages
+$(ext_tgz_list): | $(externaldir)
+	$(call cmd,CURL,$@,$(pkg_pypi_url)/$(@F))
+
+# Unpack the .tar.gz packages (touch the directory to make it current)
+$(ext_blddir_list): % : %.tar.gz
+	$(call cmd,UNTAR,$<,$(externaldir))
 	@touch $@
 
-$(LIB_DIR)/$(NGINX_TGZ):
-	mkdir -p $(LIB_DIR)
-	cd $(LIB_DIR) && $(WGET) $(NGINX_URL)
+# ============================================================================
+# LuaJIT Build
 
-$(BUILD_DIR)/$(NGINX)/.d: $(LIB_DIR)/$(NGINX_TGZ) $(BUILD_DIR)/.d
-	cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(NGINX_TGZ)
-	@touch $@
+lua_jit_obj = $(exportdir)$(_prefix)/bin/luajit
 
-$(LIB_DIR)/$(NGINX_DEV_TGZ): 
-	mkdir -p $(LIB_DIR)
-	cd $(LIB_DIR) && $(WGET) $(NGINX_DEV_URL) -O $(NGINX_DEV_TGZ)
+$(lua_jit_obj): $(externaldir)/$(lua_jit_pkg)
+	$(call cmd,BUILD,$@,$<,install,DESTDIR=$(abspath $(exportdir)) PREFIX=$(_prefix))
 
-$(BUILD_DIR)/$(NGINX_DEV)/.d: $(LIB_DIR)/$(NGINX_DEV_TGZ) $(BUILD_DIR)/.d
-	cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(NGINX_DEV_TGZ)
-	@touch $@
+.PHONY: luajit
+luajit: $(lua_jit_obj)
 
-$(LIB_DIR)/$(NGINX_LUA_TGZ): 
-	mkdir -p $(LIB_DIR)
-	cd $(LIB_DIR) && $(WGET) $(NGINX_LUA_URL) -O $(NGINX_LUA_TGZ)
+# End LuaJIT Build
+# ============================================================================
 
-$(BUILD_DIR)/$(NGINX_LUA)/.d: $(LIB_DIR)/$(NGINX_LUA_TGZ) $(BUILD_DIR)/.d
-	cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(NGINX_LUA_TGZ)
-	@touch $@
+# ============================================================================
+# Lua Resty Redis Build
 
-$(LIB_DIR)/$(LUA_REDIS_TGZ): 
-	mkdir -p $(LIB_DIR)
-	cd $(LIB_DIR) && $(WGET) $(LUA_REDIS_URL) -O $(LUA_REDIS_TGZ)
+lua_resty_redis_obj = $(exportdir)$(_prefix)/lib/lua/5.1/resty/redis.lua
 
-$(ZPROXY_INSTALL)/opt/$(RESTY_REDIS)/.d: $(LIB_DIR)/$(LUA_REDIS_TGZ) $(ZPROXY_INSTALL)/opt/.d
-	cd $(ZPROXY_INSTALL)/opt && tar -xvf $(LIB_DIR)/$(LUA_REDIS_TGZ) && mv $(LUA_REDIS_V) $(RESTY_REDIS)
-	@touch $@
+$(lua_resty_redis_obj): $(externaldir)/$(lua_resty_redis_pkg) $(lua_jit_obj)
+	$(call cmd,BUILD,$@,$<,install,DESTDIR=$(abspath $(exportdir)) PREFIX=$(_prefix) LUA_VERSION=5.1)
 
-$(LIB_DIR)/$(LUA_CJSON_TGZ):
-	mkdir -p $(LIB_DIR)
-	cd $(LIB_DIR) && $(WGET) $(LUA_CJSON_URL) -O $(LUA_CJSON_TGZ)
+.PHONY: luaresty
+luaresty: $(lua_resty_redis_obj)
 
-$(BUILD_DIR)/$(LUA_CJSON)/cjson.so: $(ZPROXY_INSTALL)/bin/luajit $(LIB_DIR)/$(LUA_CJSON_TGZ)
-	mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(LUA_CJSON_TGZ); \
-	cd $(BUILD_DIR)/$(LUA_CJSON) && make INSTALL_DIR="$(INSTALL_DIR)"
-	@touch $@
+# ============================================================================
+# Lua CJSON Build
 
-$(LIB_DIR)/$(LUA_JIT_TGZ): 
-	mkdir -p $(LIB_DIR)
-	cd $(LIB_DIR) && $(WGET) $(LUA_JIT_URL)
+lua_cjson_obj = $(exportdir)$(_prefix)/lib/lua/5.1/cjson.so
 
-$(BUILD_DIR)/$(LUA_JIT)/.d: $(LIB_DIR)/$(LUA_JIT_TGZ) $(BUILD_DIR)/.d
-	cd $(BUILD_DIR) && tar -xvf $(LIB_DIR)/$(LUA_JIT_TGZ)
-	@touch $@
+$(lua_cjson_obj): $(externaldir)/$(lua_cjson_pkg) $(lua_jit_obj)
+	$(call cmd,BUILD,$@,$<,install,DESTDIR=$(abspath $(exportdir)) PREFIX=$(_prefix) LUA_INCLUDE_DIR=$(abspath $(exportdir))$(_prefix)/include/luajit-2.0)
 
+.PHONY: luacjson
+luacjson: $(lua_cjson_obj)
 
-LUAJIT_INSTALL=$(ZPROXY_INSTALL)/bin/luajit
-$(ZPROXY_INSTALL)/bin/luajit: $(BUILD_DIR)/$(LUA_JIT)/.d
-	cd $(BUILD_DIR)/$(LUA_JIT);\
-	make;\
-	make install PREFIX=$(ZPROXY_INSTALL)
+# End Lua CJSON Build
+# ============================================================================
 
-$(ZPROXY_INSTALL)/lib/cjson.so: $(BUILD_DIR)/$(LUA_CJSON)/cjson.so
-	mkdir -p $(ZPROXY_INSTALL)/lib
-	cp $(BUILD_DIR)/$(LUA_CJSON)/cjson.so $(ZPROXY_INSTALL)/lib
+# ============================================================================
+# NGINX Build
 
-NGINXDEV= $(BUILD_DIR)/$(NGINX_DEV)/.d
-NGINXLUA=$(BUILD_DIR)/$(NGINX_LUA)/.d
-LUAREDIS_INSTALL=$(ZPROXY_INSTALL)/opt/$(RESTY_REDIS)/.d
-LUACJSON_INSTALL=$(ZPROXY_INSTALL)/lib/cjson.so
-NGINX_INSTALL=$(ZPROXY_INSTALL)/sbin/nginx
+nginx_obj = $(exportdir)$(_prefix)/sbin/nginx
 
-$(ZPROXY_INSTALL)/sbin/nginx: $(LUAJIT_INSTALL) $(NGINXDEV) $(NGINXLUA) $(LUAREDIS_INSTALL) $(LUACJSON_INSTALL) $(BUILD_DIR)/$(NGINX)/.d
-	cd $(BUILD_DIR)/$(NGINX);\
-	export LUAJIT_LIB=$(ZPROXY_INSTALL)/lib;\
-	export LUAJIT_INC=$(ZPROXY_INSTALL)/include/luajit-2.0;\
-	./configure --prefix=$(ZPROXY_INSTALL) \
-		--add-module=$(BUILD_DIR)/$(NGINX_DEV) \
-		--add-module=$(BUILD_DIR)/$(NGINX_LUA)/ \
-		--with-http_ssl_module \
-		--with-http_stub_status_module \
-		--without-http_uwsgi_module \
-		--without-http_scgi_module \
-		--without-http_fastcgi_module; \
-	make -j2; \
-	make install
+nginx_dependencies = $(externaldir)/$(nginx_pkg) \
+	$(externaldir)/$(nginx_dev_pkg) \
+	$(externaldir)/$(lua_nginx_pkg) \
+	$(lua_jit_obj)
 
+nginx_configure_opts = \
+	--prefix=$(_prefix) \
+	--add-module=$(abspath $(externaldir)/$(nginx_dev_pkg)) \
+	--add-module=$(abspath $(externaldir)/$(lua_nginx_pkg)) \
+	--with-http_ssl_module \
+	--with-http_stub_status_module \
+	--without-http_uwsgi_module \
+	--without-http_scgi_module \
+	--without-http_fastcgi_module
 
-ZPROXYCFG=$(ZPROXY_INSTALL)/conf/zproxy-nginx.conf
-$(ZPROXY_INSTALL)/conf/zproxy-nginx.conf:
-	cp conf/* $(ZPROXY_INSTALL)/conf/; \
-	rm -f $(ZPROXY_INSTALL)/conf/nginx.conf; \
-	ln -s zproxy-nginx.conf $(ZPROXY_INSTALL)/conf/nginx.conf; \
-	cp zproxy $(ZPROXY_INSTALL)/sbin/ ;\
-	chmod +x $(ZPROXY_INSTALL)/sbin/zproxy;\
-	mkdir -p $(ZPROXY_INSTALL)/scripts && cp scripts/* $(ZPROXY_INSTALL)/scripts/;
+$(nginx_obj): $(nginx_dependencies)
+	@export LUAJIT_LIB=$(abspath $(exportdir))$(_prefix)/lib; \
+	export LUAJIT_INC=$(abspath $(exportdir))$(_prefix)/include/luajit-2.0; \
+	pushd $< 2>&1 >/dev/null; \
+	$(call cmd_noat,CFGBLD,$@,$(nginx_configure_opts))
+	@# DESTDIR=$(bldtop)/export is on purpose.
+	$(call cmd,BUILD,$@,$<,install,-j2 DESTDIR=$(abspath $(bldtop)/export))
 
+.PHONY: nginx
+nginx: $(nginx_obj)
+
+# End NGINX Build
+# ============================================================================
+
+# ============================================================================
+# ZProxy Script and Config File Install
+
+# Install structure
+#     $(prefix)
+#         + zproxy
+#             + bin
+#             + sbin
+#             + conf
+#             + scripts
+#             + lib
+#             + share
+
+conf_files = $(notdir $(wildcard $(srcdir)/conf/*))
+script_files = $(notdir $(wildcard $(srcdir)/scripts/*))
+
+target_script_files = $(addprefix $(target_dir)/scripts/,$(script_files))
+target_conf_files = $(addprefix $(target_dir)/conf/,$(conf_files))
+
+export_conf_files = mime.types mime.types.default nginx.conf.default koi-utf koi-win win-utf
+nginx_conf_files = $(addprefix $(target_dir)/conf/,$(export_conf_files))
+
+$(nginx_conf_files): $(target_dir)/conf/% : $(exportdir)$(_prefix)/conf/% | $(target_dir)/conf
+	$(call cmd,INSTALL,$<,$@,664,$(INST_OWNER),$(INST_GROUP))
+
+$(target_conf_files): $(target_dir)/conf/% : $(srcdir)/conf/% | $(target_dir)/conf
+	$(call cmd,INSTALL,$<,$@,664,$(INST_OWNER),$(INST_GROUP))
+
+$(target_dir)/conf/nginx.conf: | $(target_dir)/conf/zproxy-nginx.conf
+	$(call cmd,SYMLINK,$(target_dir)/conf/zproxy-nginx.conf,$@)
+
+$(target_dir)/sbin/zproxy: $(srcdir)/zproxy | $(target_dir)/sbin
+	$(call cmd,INSTALL,$<,$@,774,$(INST_OWNER),$(INST_GROUP))
+
+# End ZProxy Config File Build
+# ============================================================================
+
+LN_OPTS = -srf
+
+.PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) $(ZPROXY_INSTALL)
+	$(call cmd,RMDIR,$(bldtop))
 
-cjson: $(LUACJSON_INSTALL)
+.PHONY: build
+build: $(nginx_obj) $(lua_jit_obj) $(lua_cjson_obj) $(lua_resty_redis_obj)
 
-install: $(NGINX_INSTALL) $(ZPROXYCFG)
+targets = \
+	$(target_conf_files) \
+	$(nginx_conf_files) \
+	$(target_dir)/conf/nginx.conf \
+	$(target_dir)/sbin/zproxy
 
+.PHONY: install installhere
+install installhere: $(targets) | $(install_subdirs)
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/bin,$(target_dir))
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/sbin,$(target_dir))
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/share,$(target_dir))
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/html,$(target_dir))
+	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/lib,$(target_dir))
+	$(call cmd,COPY,-a,$(srcdir)/scripts,$(target_dir))
+	$(call cmd,COPY,-a,$(srcdir)/kibana,$(target_dir)/html/logview)
+	$(call cmd,CHOWN,$(INST_OWNER),$(INST_GROUP),$(target_dir))
+
+.PHONY: uninstall
+uninstall:
+	$(call cmd,RMDIR,$(target_dir))
+
+.PHONY: uninstallhere
+uninstallhere:
+	$(call cmd,RMDIR,$(_DESTDIR))

@@ -1,0 +1,118 @@
+{
+  "angular-cookies": {
+    "version":,
+    "license":
+  },
+  "angular-dragdrop": {
+    "version":,
+    "license":
+  },
+  "angular-sanitize": {
+    "version":,
+    "license":
+  },
+  "angular-strap": {
+    "version":,
+    "license":
+  },
+  "bindonce": {
+    "version":,
+    "license":
+  },
+  "datepicker": {
+    "version":,
+    "license":
+  },
+  "timepicker": {
+    "version":,
+    "license":
+  },
+  "bootstrap": {
+    "version":,
+    "license":
+  },
+  "elasticsjs": {
+    "version":,
+    "license":
+  },
+  "jquery": {
+    "version":,
+    "license":
+  },
+  "flot": {
+    "version":,
+    "license":
+  },
+  "": {
+    "version":,
+    "license":
+  },
+  "": {
+    "version":,
+    "license":
+  },
+  "": {
+    "version":,
+    "license":
+  },
+  "": {
+    "version":,
+    "license":
+  },
+  "": {
+    "version":,
+    "license":
+  },
+  "": {
+    "version":,
+    "license":
+  },
+  "": {
+    "version":,
+    "license":
+  },
+  "": {
+    "version":,
+    "license":
+  },
+  "require": {
+    "version":,
+    "license":
+  },
+  "chromath": {
+    "version":,
+    "license":
+  },
+  "filesaver": {
+    "version":,
+    "license":
+  },
+  "modernizr": {
+    "version":,
+    "license":
+  },
+  "moment": {
+    "version":,
+    "license":
+  },
+  "numeral": {
+    "version":,
+    "license":
+  },
+  "timezone": {
+    "version":,
+    "license":
+  },
+  "underscore": {
+    "version":,
+    "license":
+  },
+  "leaflet": {
+    "version":,
+    "license":
+  },
+  "jvectormap": {
+    "version":,
+    "license":
+  },
+}

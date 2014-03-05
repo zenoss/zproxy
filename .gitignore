@@ -1,9 +1,48 @@
-#build stuff
-build
-install
-lib
-.extracted
+# Python generated artifacts
+*.py[cod]
+
+# VIM edit history files
+.*.sw?
+
+# C extensions
+*.so
+
+# Packages
+.vagrant
+.installed.cfg
+
+# Paths
+/build/
+/here/
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
 .idea
-#emacs
-\#*
+*.iml
+chef
+
+# Build artifacts
+*.log
+.checked*
+
 *~
+
+# OS X generated files
+.DS_Store
+
+vagrant/packer/packer_cache
+*.box
