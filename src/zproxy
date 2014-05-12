@@ -22,7 +22,7 @@ zproxy_run() {
 	    export LD_LIBRARY_PATH=${ZPROXY_HOME}/lib:$LD_LIBRARY_PATH
 	    echo "Starting zproxy"
 	    cd ${ZPROXY_HOME}
-	    ${ZPROXY_HOME}/sbin/nginx $@
+	    exec ${ZPROXY_HOME}/sbin/nginx $@
 	    ;;
       register)
 	    ZPROXY_HOME=${ZPROXY_HOME} python ${ZPROXY_HOME}/scripts/register.py $@
