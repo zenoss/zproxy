@@ -55,11 +55,11 @@ exportdir               = $(bldtop)/export
 pkg_pypi_url           ?= http://zenpip.zendev.org/packages
 
 nginx                   = nginx
-nginx_version           = 1.4.2
+nginx_version           = 1.7.3
 nginx_pkg               = $(nginx)-$(nginx_version)
 
 nginx_dev               = ngx_devel_kit
-nginx_dev_version       = 0.2.18
+nginx_dev_version       = 0.2.19
 nginx_dev_pkg           = $(nginx_dev)-$(nginx_dev_version)
 
 lua_jit                 = LuaJIT
@@ -67,19 +67,24 @@ lua_jit_version         = 2.0.2
 lua_jit_pkg             = $(lua_jit)-$(lua_jit_version)
 
 lua_nginx               = lua-nginx-module
-lua_nginx_version       = 0.8.5
+lua_nginx_version       = 0.9.10
 lua_nginx_pkg           = $(lua_nginx)-$(lua_nginx_version)
 
 lua_resty_redis         = lua-resty-redis
-lua_resty_redis_version = 0.15
+lua_resty_redis_version = 0.20
 lua_resty_redis_pkg     = $(lua_resty_redis)-$(lua_resty_redis_version)
 
 lua_cjson               = lua-cjson
 lua_cjson_version       = 2.1.0
 lua_cjson_pkg           = $(lua_cjson)-$(lua_cjson_version)
 
+ngx_pagespeed           = ngx_pagespeed
+ngx_pagespeed_version   = 1.8.31.4
+ngx_pagespeed_pkg       = $(ngx_pagespeed)-$(ngx_pagespeed_version)
+
+
 _external_pkgs  = $(nginx_pkg) $(nginx_dev_pkg) \
-	$(lua_jit_pkg) $(lua_nginx_pkg) $(lua_resty_redis_pkg) $(lua_cjson_pkg)
+	$(lua_jit_pkg) $(lua_nginx_pkg) $(lua_resty_redis_pkg) $(lua_cjson_pkg) $(ngx_pagespeed_pkg)
 
 ext_blddir_list = $(addprefix $(externaldir)/,$(_external_pkgs))
 ext_tgz_list = $(addsuffix .tar.gz,$(ext_blddir_list))
@@ -170,12 +175,14 @@ nginx_obj = $(exportdir)$(_prefix)/sbin/nginx
 nginx_dependencies = $(externaldir)/$(nginx_pkg) \
 	$(externaldir)/$(nginx_dev_pkg) \
 	$(externaldir)/$(lua_nginx_pkg) \
+	$(externaldir)/$(ngx_pagespeed_pkg) \
 	$(lua_jit_obj)
 
 nginx_configure_opts = \
 	--prefix=$(_prefix) \
 	--add-module=$(abspath $(externaldir)/$(nginx_dev_pkg)) \
 	--add-module=$(abspath $(externaldir)/$(lua_nginx_pkg)) \
+	--add-module=$(abspath $(externaldir)/$(ngx_pagespeed_pkg)) \
 	--with-http_ssl_module \
 	--with-http_stub_status_module \
 	--without-http_uwsgi_module \
