@@ -169,6 +169,13 @@ function rewrite_backend(uri, uri_prefix, backend)
       -- not a path back end, should just be a host eg. http://www.host.com:8000
       ngx.var.backend = backend
    end
+   -- Prevent proxy loop:
+   if string.sub(ngx.var.backend, 1, string.len("https://127.0.0.1:443")) == "https://127.0.0.1:443" then
+      ngx.var.myhost = "127.0.0.1:443";
+   else
+      ngx.var.myhost = ngx.var.http_host
+   end
+
 end
 
 function extract_auth_token(req_headers)
