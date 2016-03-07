@@ -14,6 +14,5 @@ local uri_prefix = extract_prefix(uri)
 local frontend = extract_frontend(ngx.var.http_host)
 local domain_name = extract_domain(frontend)
 local backend = extract_backend(uri_prefix, frontend, domain_name)
-local req_headers = ngx.req.get_headers()
 
 rewrite_backend(uri, uri_prefix, backend)
