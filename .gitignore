@@ -13,7 +13,10 @@
 
 # Paths
 /build/
+/install/
 /here/
+
+*.tar.gz
 
 # Installer logs
 pip-log.txt
