@@ -4,7 +4,7 @@ Zproxy
 # Overview
 The build process for zproxy was revised in July 2016 to produce a versioned
 tarball artifact. The first released version of that artifact was labeled '1.0.0'.
-The build process for priou versions released as part of RM 5.0.x and 5.1.x was
+The build process for prior versions released as part of RM 5.0.x and 5.1.x was
 similar, but different.
 
 # Building
