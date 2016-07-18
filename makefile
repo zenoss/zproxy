@@ -15,23 +15,29 @@ ARTIFACT   = zproxy-$(VERSION).tar.gz
 
 .PHONY: clean build install package
 
-DOCKER_BUILD_COMAND = docker run --rm -v $(PWD):/mnt/workspace \
+BUILD_COMMAND_BASE := make -f GNUmakefile.orig
+
+ifeq ($(USE_DOCKER),true)
+BUILD_COMMAND := docker run --rm -v $(PWD):/mnt/workspace \
 		-w /mnt/workspace -u root -e USER=root -e DESTDIR=/mnt/workspace/install \
-		zenoss/build-tools:0.0.1-dev-1 make -f GNUmakefile.orig
+		zenoss/build-tools:0.0.3 $(BUILD_COMMAND_BASE)
+else
+BUILD_COMMAND := $(BUILD_COMMAND_BASE)
+endif
 
 #
 # Note that the files in install are owned by root, so we have to use sudo
 # to remove them.
 clean:
-	${DOCKER_BUILD_COMAND} clean
+	${BUILD_COMMAND} clean
 	-sudo rm -rf ./install
 	-rm -f $(ARTIFACT)
 
 build:
-	${DOCKER_BUILD_COMAND} build
+	${BUILD_COMMAND} build
 
 install:
-	${DOCKER_BUILD_COMAND} install
+	${BUILD_COMMAND} install
 
 package: install
 	cd install;tar cvfz ../$(ARTIFACT) opt
