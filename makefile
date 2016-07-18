@@ -20,7 +20,7 @@ BUILD_COMMAND_BASE := make -f GNUmakefile.orig
 ifeq ($(USE_DOCKER),true)
 BUILD_COMMAND := docker run --rm -v $(PWD):/mnt/workspace \
 		-w /mnt/workspace -u root -e USER=root -e DESTDIR=/mnt/workspace/install \
-		zenoss/build-tools:0.0.1-dev-1 $(BUILD_COMMAND_BASE)
+		zenoss/build-tools:0.0.3 $(BUILD_COMMAND_BASE)
 else
 BUILD_COMMAND := $(BUILD_COMMAND_BASE)
 endif
