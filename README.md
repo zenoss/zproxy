@@ -22,5 +22,12 @@ owned by root.
 
 # Releasing
 
-Follow the standard git-flow release process, modifying the `VERSION` property
-in `makefile` as necessary.
+Use git flow to release a new version to the `master` branch.
+
+The artifact version is defined in the [makefile](./makefile).
+
+For Zenoss employees, the details on using git-flow to release a version is documented 
+on the Zenoss Engineering 
+[web site](https://sites.google.com/a/zenoss.com/engineering/home/faq/developer-patterns/using-git-flow).
+After the git flow process is complete, a jenkins job can be triggered manually to build and 
+publish the artifact. 
