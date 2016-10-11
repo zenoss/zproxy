@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+
+__doc__="""update_upstreams PORT FILE
+
+update_upstreams updates a file with a list of nginx upstream server
+declarations.
+
+It parses netstat output to find the list of contiguous ports, starting at
+a given port, that have services listening (e.g., a system with 6 Zope instances
+would have listeners at 9080-9085).  It then checks the specified file to see if
+it is current. If it is not current, it updates the file to match the current
+server list.
+
+Exit codes:
+    0 - Success, no update
+    1 - Error
+    2 - Server list was updated
+"""
+
+import sys
+import argparse
+import subprocess
+
+parser = argparse.ArgumentParser("update_upstreams", usage=__doc__)
+parser.add_argument("port", type=int, help="port to start at")
+parser.add_argument("filename", help="file to update")
+args = parser.parse_args()
+
+try:
+    stdout = subprocess.check_output("netstat -ant | grep LISTEN | awk {'print $4'}", shell=True)
+except Exception:
+    print >>sys.stderr, "Unable to run netstat"
+    sys.exit(1)
+
+ports = sorted(set(int(line.split(':')[-1]) for line in stdout.splitlines()))
+
+result = []
+for p in ports:
+    if p < args.port:
+        continue
+    if p == args.port or (result and p-result[-1] == 1):
+        result.append(p)
+    else:
+        break
+
+servers = ["server 127.0.0.1:%d;" % p for p in result]
+existing = []
+
+try:
+    with open(args.filename, 'r') as f:
+        existing = [s.strip() for s in f.readlines()]
+except IOError as e:
+    pass
+
+if existing != servers:
+    with open(args.filename, 'w') as f:
+        f.write('\n'.join(servers))
+    sys.exit(2)
