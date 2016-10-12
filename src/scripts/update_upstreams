@@ -52,7 +52,7 @@ try:
 except IOError as e:
     pass
 
-if existing != servers:
+if servers and existing != servers:
     with open(args.filename, 'w') as f:
         f.write('\n'.join(servers))
     sys.exit(2)
