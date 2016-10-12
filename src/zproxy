@@ -49,12 +49,15 @@ update_zope_static() {
 	TMPCONF=${CONFDIR}/.zope-static.conf.tmp
 	while true; do
 		wget -qO ${TMPCONF} http://127.0.0.1:9080/nginx_static;
-		if ! cmp -s ${TMPCONF} ${CONF}; then
-			mv ${TMPCONF} ${CONF}
-			echo "Reloading nginx config due to Zope static resources change"
-			reload_nginx
+		if [ $? -eq 0 ]; then
+			if ! cmp -s ${TMPCONF} ${CONF}; then
+				mv ${TMPCONF} ${CONF}
+				echo "Reloading nginx config due to Zope static resources change"
+				reload_nginx
+			fi
+			return
 		fi
-		sleep 60;
+		sleep 5
 	done
 }
 
