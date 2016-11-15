@@ -8,18 +8,6 @@
 #
 ##############################################################################
 
-rotate_logs() {
-  while true; do
-    if [ -s /opt/zenoss/zproxy/logs/access.log ]; then
-      if [ $(du -m /opt/zenoss/zproxy/logs/access.log | cut -f 1) -ge 30 ]; then
-        mv /opt/zenoss/zproxy/logs/access.log /opt/zenoss/zproxy/logs/access.log.0
-        kill -USR1 `cat /opt/zenoss/zproxy/logs/nginx.pid`
-      fi
-    fi
-    sleep 3600
-  done
-}
-
 if [ -z ${ZPROXY_HOME} ]; then
     SCRIPT=`readlink -f $0`
     pushd `dirname ${SCRIPT}` > /dev/null
@@ -28,13 +16,60 @@ if [ -z ${ZPROXY_HOME} ]; then
     ZPROXY_HOME=`dirname ${SCRIPTPATH}`
 fi
 
+rotate_logs() {
+  while true; do
+    if [ -s ${ZPROXY_HOME}/logs/access.log ]; then
+      if [ $(du -m ${ZPROXY_HOME}/logs/access.log | cut -f 1) -ge 30 ]; then
+        mv ${ZPROXY_HOME}/logs/access.log ${ZPROXY_HOME}/logs/access.log.0
+        kill -USR1 $(cat ${ZPROXY_HOME}/logs/nginx.pid)
+      fi
+    fi
+    sleep 3600
+  done
+}
+
+reload_nginx() {
+	LD_LIBRARY_PATH=${ZPROXY_HOME}/lib ${ZPROXY_HOME}/sbin/nginx -s reload
+}
+
+update_zopes() {
+	while true; do
+		${ZPROXY_HOME}/scripts/update_upstreams 9080 ${ZPROXY_HOME}/conf/zope-upstreams.conf
+		if [ $? -eq 2 ]; then
+			echo "$(date) Reloading nginx config due to upstream Zope servers change"
+			reload_nginx
+		fi
+		sleep 5
+	done
+}
+
+update_zope_static() {
+	CONFDIR=${ZPROXY_HOME}/conf
+	CONF=${CONFDIR}/zope-static.conf
+	TMPCONF=${CONFDIR}/.zope-static.conf.tmp
+	while true; do
+		wget -qO ${TMPCONF} http://127.0.0.1:9080/nginx_static;
+		if [ $? -eq 0 ]; then
+			if ! cmp -s ${TMPCONF} ${CONF}; then
+				mv ${TMPCONF} ${CONF}
+				echo "Reloading nginx config due to Zope static resources change"
+				reload_nginx
+			fi
+			return
+		fi
+		sleep 5
+	done
+}
+
 zproxy_run() {
     case "$CMD" in
       start)
 	    export LD_LIBRARY_PATH=${ZPROXY_HOME}/lib:$LD_LIBRARY_PATH
 	    echo "Starting zproxy"
 	    cd ${ZPROXY_HOME}
-            rotate_logs &
+		rotate_logs &
+		update_zopes &
+		update_zope_static &
 	    exec ${ZPROXY_HOME}/sbin/nginx $@
 	    ;;
       register)

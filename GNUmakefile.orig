@@ -55,7 +55,7 @@ exportdir               = $(bldtop)/export
 pkg_pypi_url           ?= http://zenpip.zendev.org/packages
 
 nginx                   = nginx
-nginx_version           = 1.10.1
+nginx_version           = 1.11.4
 nginx_pkg               = $(nginx)-$(nginx_version)
 
 nginx_dev               = ngx_devel_kit
@@ -79,7 +79,7 @@ lua_cjson_version       = 2.1.0
 lua_cjson_pkg           = $(lua_cjson)-$(lua_cjson_version)
 
 ngx_pagespeed           = ngx_pagespeed
-ngx_pagespeed_version   = 1.11.33.2
+ngx_pagespeed_version   = 1.11.33.4
 ngx_pagespeed_pkg       = $(ngx_pagespeed)-$(ngx_pagespeed_version)
 
 
@@ -184,6 +184,7 @@ nginx_configure_opts = \
 	--add-module=$(abspath $(externaldir)/$(lua_nginx_pkg)) \
 	--add-module=$(abspath $(externaldir)/$(ngx_pagespeed_pkg)) \
 	--with-http_ssl_module \
+	--with-http_sub_module \
 	--with-http_stub_status_module \
 	--without-http_uwsgi_module \
 	--without-http_scgi_module \
@@ -263,7 +264,6 @@ install installhere: $(targets) | $(install_subdirs)
 	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/html,$(target_dir))
 	$(call cmd,COPY,-a,$(exportdir)$(_prefix)/lib,$(target_dir))
 	$(call cmd,COPY,-a,$(srcdir)/scripts,$(target_dir))
-	$(call cmd,COPY,-a,$(srcdir)/kibana,$(target_dir)/html/logview)
 	$(call cmd,CHOWN,$(INST_OWNER),$(INST_GROUP),$(target_dir))
 
 .PHONY: uninstall
