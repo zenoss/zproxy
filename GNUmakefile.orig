@@ -52,7 +52,7 @@ bldtop                  = build
 externaldir             = $(bldtop)/external
 exportdir               = $(bldtop)/export
 
-pkg_pypi_url           ?= http://zenpip.zendev.org/packages
+pkg_pypi_url           ?= http://zenpip.zenoss.eng/packages
 
 nginx                   = nginx
 nginx_version           = 1.11.4
