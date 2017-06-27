@@ -39,13 +39,11 @@ update_zopes() {
 			echo "$(date) Reloading nginx config due to upstream Zope servers change"
 			reload_nginx
 		fi
-		sleep 1
 		${ZPROXY_HOME}/scripts/update_upstreams 9290 ${ZPROXY_HOME}/conf/zopereports-upstreams.conf
 		if [ $? -eq 2 ]; then
 			echo "$(date) Reloading nginx config due to upstream Reporting-Zope servers change"
 			reload_nginx
 		fi
-		sleep 1
 		${ZPROXY_HOME}/scripts/update_upstreams 9320 ${ZPROXY_HOME}/conf/apizopes-upstreams.conf
 		if [ $? -eq 2 ]; then
 			echo "$(date) Reloading nginx config due to upstream API-Zope servers change"
