@@ -26,7 +26,7 @@ def check_endpoint(p):
     try:
         # ZEN-28153: check a potential upstream by cURLing it
         # cURL <7.32.0 does not support decimal values for -m or --max-time
-        result = subprocess.check_output('curl -s http://127.0.0.1:%d -I -m 1'%p, shell=True)
+        result = subprocess.check_output('curl -s http://127.0.0.1:%d/zport/ruok -I -m 1'%p, shell=True)
         return p
     except Exception:
         print >>sys.stderr, "No upstream found at https://127.0.0.1:%d"%p
