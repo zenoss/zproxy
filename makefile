@@ -10,7 +10,7 @@
 # install - stages the runtime distribution of files in the 'install' subdirectory
 # package - creates a tar ball from the contents of the install subdirectory
 #
-VERSION   ?= 1.0.4-dev
+VERSION   ?= 1.0.5-dev
 ARTIFACT   = zproxy-$(VERSION).tar.gz
 
 .PHONY: clean build install package
