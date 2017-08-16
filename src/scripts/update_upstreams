@@ -20,6 +20,17 @@ Exit codes:
 import sys
 import argparse
 import subprocess
+from multiprocessing import Pool
+
+def check_endpoint(p):
+    try:
+        # ZEN-28153: check a potential upstream by cURLing it
+        # cURL <7.32.0 does not support decimal values for -m or --max-time
+        result = subprocess.check_output('curl -s http://127.0.0.1:%d/zport/ruok -I -m 1'%p, shell=True)
+        return p
+    except Exception:
+        print >>sys.stderr, "No upstream found at https://127.0.0.1:%d"%p
+        return -1
 
 parser = argparse.ArgumentParser("update_upstreams", usage=__doc__)
 parser.add_argument("port", type=int, help="port to start at")
@@ -43,7 +54,17 @@ for p in ports:
     else:
         break
 
-servers = ["server 127.0.0.1:%d;" % p for p in result]
+upstream_portnums = []
+# ZEN-28153: ports shown in the netstat cmd results will still show as open
+# even after the number of Zope upstreams have been decreased.
+# So cURL each endpoint to make sure it's an actual upstream.
+# We do it in parallel to avoid high latency for many upstreams
+curl_pool = Pool(processes=len(result))
+upstream_portnums = filter(lambda x: x != -1, curl_pool.map(check_endpoint, result))
+curl_pool.close()
+curl_pool.join()
+
+servers = ["server 127.0.0.1:%d;" % p for p in upstream_portnums]
 existing = []
 
 try:

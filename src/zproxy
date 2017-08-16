@@ -39,10 +39,14 @@ update_zopes() {
 			echo "$(date) Reloading nginx config due to upstream Zope servers change"
 			reload_nginx
 		fi
-		sleep 5
 		${ZPROXY_HOME}/scripts/update_upstreams 9290 ${ZPROXY_HOME}/conf/zopereports-upstreams.conf
 		if [ $? -eq 2 ]; then
 			echo "$(date) Reloading nginx config due to upstream Reporting-Zope servers change"
+			reload_nginx
+		fi
+		${ZPROXY_HOME}/scripts/update_upstreams 9320 ${ZPROXY_HOME}/conf/apizopes-upstreams.conf
+		if [ $? -eq 2 ]; then
+			echo "$(date) Reloading nginx config due to upstream API-Zope servers change"
 			reload_nginx
 		fi
 		sleep 5
@@ -53,6 +57,10 @@ update_zope_static() {
 	CONFDIR=${ZPROXY_HOME}/conf
 	CONF=${CONFDIR}/zope-static.conf
 	TMPCONF=${CONFDIR}/.zope-static.conf.tmp
+    # To make the UI available as quickly as possible during startup, check for
+    # any changes frequently in the beginning. Once the changes are loaded,
+    # check less frequently.
+    SLEEP=5
 	while true; do
 		wget -qO ${TMPCONF} http://127.0.0.1:9080/nginx_static;
 		if [ $? -eq 0 ]; then
@@ -61,9 +69,9 @@ update_zope_static() {
 				echo "Reloading nginx config due to Zope static resources change"
 				reload_nginx
 			fi
-			return
+			SLEEP=60
 		fi
-		sleep 5
+		sleep $SLEEP
 	done
 }
 
