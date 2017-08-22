@@ -50,6 +50,12 @@ update_zopes() {
 			reload_nginx
 		fi
 		sleep 5
+		${ZPROXY_HOME}/scripts/update_upstreams 9180 ${ZPROXY_HOME}/conf/zauth-upstreams.conf
+		if [ $? -eq 2 ]; then
+			echo "$(date) Reloading nginx config due to upstream Zauth servers change"
+			reload_nginx
+		fi
+		sleep 5
 	done
 }
 
