@@ -16,9 +16,10 @@ local domain_name = extract_domain(frontend)
 local backend = extract_backend(uri_prefix, frontend, domain_name)
 local req_headers = ngx.req.get_headers()
 local auth_token = extract_auth_token(req_headers)
+local access_token = ngx.var['cookie_accessToken']
 
 -- If we don't have a basic auth header or a zauth token, quit now
-if not req_headers['Authorization'] and not auth_token then
+if not req_headers['Authorization'] and not access_token and not auth_token then
    return exit_unauth()
 end
 
